@@ -1,0 +1,45 @@
+name: ESP-IDF Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build for ${{ matrix.idf_target }} (IDF ${{ matrix.idf_ver }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        idf_target: [esp32, esp32s2, esp32s3, esp32p4]
+        idf_ver: [v5.5.1, v6.0-dev]
+        # v5.5.1: Current stable release
+        # v6.0-dev: Development branch (may have breaking changes)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Build with ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ matrix.idf_ver }}
+          target: ${{ matrix.idf_target }}
+          path: '.'
+
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: build
+    if: always()
+    steps:
+      - name: Check build results
+        run: |
+          echo "Build workflow completed"
+          echo "Check individual jobs for details"

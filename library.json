@@ -1,0 +1,39 @@
+{
+    "name": "esp-hub75",
+    "version": "0.1.0",
+    "description": "High-performance DMA-based driver for HUB75 RGB LED matrix panels on ESP32 platforms",
+    "keywords": "hub75, led, matrix, display, rgb, dma, esp32, esp32s3, esp32p4, driver",
+    "license": "MIT",
+    "repository":
+    {
+      "type": "git",
+      "url": "https://github.com/stuartparmenter/esp-hub75.git"
+    },
+    "authors":
+    [
+      {
+        "name": "Stuart Parmenter",
+        "email": "pavlov@pavlov.net",
+        "maintainer": true
+      }
+    ],
+    "homepage": "https://github.com/stuartparmenter/esp-hub75",
+    "dependencies": [],
+    "frameworks": "*",
+    "platforms": "espressif32",
+    "build": {
+      "flags": [
+        "-O2"
+      ],
+      "srcDir": "components/hub75/src",
+      "includeDir": "components/hub75/include"
+    },
+    "export": {
+      "include": [
+        "components/hub75/src/*",
+        "components/hub75/include/*",
+        "library.json",
+        "LICENSE"
+      ]
+    }
+  }

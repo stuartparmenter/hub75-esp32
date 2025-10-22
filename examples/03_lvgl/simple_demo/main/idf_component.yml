@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2025 Stuart Parmenter
+# SPDX-License-Identifier: MIT
+
+# Component dependencies for LVGL demo
+# ESP-IDF Component Manager automatically downloads these during build
+
+dependencies:
+  lvgl/lvgl:
+    version: "^9.0.0"
+    rules:
+      - if: "idf_version >= 5.0"

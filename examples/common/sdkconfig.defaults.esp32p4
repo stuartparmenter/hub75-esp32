@@ -1,0 +1,10 @@
+# ESP32-P4 specific configuration (shared across all examples)
+
+# PSRAM Configuration (REQUIRED for ESP32-P4 PARLIO)
+CONFIG_IDF_EXPERIMENTAL_FEATURES=y
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_SPEED_200M=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y
+
+# Main task stack size (may be needed for some examples)
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192

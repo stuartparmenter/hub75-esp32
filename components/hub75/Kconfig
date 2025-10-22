@@ -1,0 +1,672 @@
+# SPDX-FileCopyrightText: 2025 Stuart Parmenter
+# SPDX-License-Identifier: MIT
+
+menu "HUB75 RGB LED Matrix Driver"
+
+    # ========================================
+    # Board Presets (Quick Pin Setup)
+    # ========================================
+
+    choice HUB75_BOARD_PRESET
+        prompt "Board Preset"
+        default HUB75_BOARD_GENERIC_S3 if IDF_TARGET_ESP32S3
+        default HUB75_BOARD_CUSTOM
+        help
+            Select a board preset to auto-configure pin mappings.
+
+            Board presets configure all HUB75 pins (R1/G1/B1/R2/G2/B2,
+            A/B/C/D/E, LAT/OE/CLK) for popular ESP32-S3 HUB75 controller boards.
+
+            Choose "Custom" to manually configure all pins for your specific
+            hardware layout.
+
+        config HUB75_BOARD_CUSTOM
+            bool "Custom (Manual Pin Configuration)"
+            help
+                Manually configure all HUB75 pins.
+
+                Use this option if your board doesn't match any preset,
+                or if you're using a breadboard/custom PCB.
+
+        config HUB75_BOARD_GENERIC_S3
+            bool "Generic ESP32-S3"
+            depends on IDF_TARGET_ESP32S3
+            help
+                Generic ESP32-S3 pin mapping:
+                - Sequential GPIO 1-14 assignment
+                - Suitable for testing and development
+                - Not a specific commercial board
+
+        config HUB75_BOARD_ADAFRUIT_MATRIX_PORTAL_S3
+            bool "Adafruit Matrix Portal S3"
+            depends on IDF_TARGET_ESP32S3
+            help
+                Adafruit Matrix Portal S3 board.
+
+                Pin mapping:
+                  R1=42, G1=41, B1=40, R2=38, G2=39, B2=37
+                  A=45, B=36, C=48, D=35, E=21
+                  LAT=47, OE=14, CLK=2
+
+                Note: GPIO45 (A pin) is a strapping pin but safe for this board.
+
+        config HUB75_BOARD_APOLLO_M1_REV4
+            bool "Apollo Automation M1 Rev4"
+            depends on IDF_TARGET_ESP32S3
+            help
+                Apollo Automation M1 Rev4 board.
+
+                Pin mapping (same as Adafruit Matrix Portal S3):
+                  R1=42, G1=41, B1=40, R2=38, G2=39, B2=37
+                  A=45, B=36, C=48, D=35, E=21
+                  LAT=47, OE=14, CLK=2
+
+        config HUB75_BOARD_APOLLO_M1_REV6
+            bool "Apollo Automation M1 Rev6"
+            depends on IDF_TARGET_ESP32S3
+            help
+                Apollo Automation M1 Rev6 board (different pinout from Rev4).
+
+                Pin mapping:
+                  R1=1, G1=5, B1=6, R2=7, G2=13, B2=9
+                  A=16, B=48, C=47, D=21, E=38
+                  LAT=8, OE=4, CLK=18
+
+        config HUB75_BOARD_HUIDU_HD_WF2
+            bool "Huidu HD-WF2"
+            depends on IDF_TARGET_ESP32S3
+            help
+                Huidu HD-WF2 WiFi controller board.
+
+                Pin mapping:
+                  R1=2, G1=6, B1=10, R2=3, G2=7, B2=11
+                  A=39, B=38, C=37, D=36, E=21
+                  LAT=33, OE=35, CLK=34
+
+                Note: E pin assignment (GPIO21) needs confirmation.
+    endchoice
+
+    # ========================================
+    # Panel Settings (Hardware + Performance)
+    # ========================================
+
+    menu "Panel Settings"
+
+        config HUB75_PANEL_WIDTH
+            int "Panel Width (pixels)"
+            default 64
+            range 16 128
+            help
+                Width of a single panel in pixels.
+
+                Common values:
+                  - 32 pixels (small panels)
+                  - 64 pixels (most common)
+                  - 128 pixels (large panels)
+
+                For multi-panel setups, this is the width of ONE panel,
+                not the total display width.
+
+        config HUB75_PANEL_HEIGHT
+            int "Panel Height (pixels)"
+            default 64
+            range 16 64
+            help
+                Height of a single panel in pixels.
+
+                Common values:
+                  - 16 pixels (1/8 scan)
+                  - 32 pixels (1/16 scan)
+                  - 64 pixels (1/32 scan)
+
+                Height determines the required scan pattern.
+
+        choice HUB75_SCAN_PATTERN
+            prompt "Scan Pattern"
+            default HUB75_SCAN_1_32 if HUB75_PANEL_HEIGHT = 64
+            default HUB75_SCAN_1_16 if HUB75_PANEL_HEIGHT = 32
+            default HUB75_SCAN_1_8
+            help
+                Row scanning pattern (must match panel hardware).
+
+                Formula: scan_pattern = height / 2
+                  - 16 pixels high → 1/8 scan (8 row pairs)
+                  - 32 pixels high → 1/16 scan (16 row pairs)
+                  - 64 pixels high → 1/32 scan (32 row pairs)
+
+                If unsure, match to panel height as shown above.
+
+            config HUB75_SCAN_1_8
+                bool "1/8 Scan (16-row panels)"
+
+            config HUB75_SCAN_1_16
+                bool "1/16 Scan (32-row panels)"
+
+            config HUB75_SCAN_1_32
+                bool "1/32 Scan (64-row panels)"
+        endchoice
+
+        choice HUB75_SCAN_WIRING
+            prompt "Scan Wiring Pattern"
+            default HUB75_WIRING_STANDARD
+            help
+                Internal panel shift register wiring pattern.
+
+                STANDARD works for 95% of panels. If your display shows
+                scrambled/garbled output with correct pins and scan pattern,
+                try one of the FOUR_SCAN variants.
+
+                FOUR_SCAN patterns are for panels with non-standard internal
+                wiring where shift registers are arranged differently.
+
+            config HUB75_WIRING_STANDARD
+                bool "Standard (Most Panels)"
+
+            config HUB75_WIRING_FOUR_SCAN_16PX
+                bool "Four-Scan 1/4 (16px high panels)"
+
+            config HUB75_WIRING_FOUR_SCAN_32PX
+                bool "Four-Scan 1/8 (32px high panels)"
+
+            config HUB75_WIRING_FOUR_SCAN_64PX
+                bool "Four-Scan 1/8 (64px high panels)"
+        endchoice
+
+        choice HUB75_SHIFT_DRIVER
+            prompt "Shift Driver IC"
+            default HUB75_DRIVER_GENERIC
+            help
+                LED driver chip type (requires special initialization sequence).
+
+                Try GENERIC first. If panel doesn't light up or shows incorrect
+                colors, try FM6126A (most common in modern panels).
+
+                MBI5124 requires inverted clock phase (set automatically).
+
+            config HUB75_DRIVER_GENERIC
+                bool "Generic (No Special Init)"
+
+            config HUB75_DRIVER_FM6126A
+                bool "FM6126A / ICN2038S (Most Modern Panels)"
+                help
+                    Very common driver in modern HUB75 panels (2018+).
+                    Also works for ICN2038S (same initialization sequence).
+
+            config HUB75_DRIVER_FM6124
+                bool "FM6124"
+
+            config HUB75_DRIVER_MBI5124
+                bool "MBI5124 (Requires Inverted Clock)"
+                help
+                    MBI5124 driver requires inverted clock phase.
+                    This is set automatically when this option is selected.
+
+            config HUB75_DRIVER_DP3246
+                bool "DP3246"
+        endchoice
+
+        choice HUB75_BIT_DEPTH
+            prompt "Bit Depth"
+            default HUB75_BIT_DEPTH_8
+            help
+                Color bit depth per channel (R/G/B).
+
+                Higher bit depth = better color gradients but slower refresh rate.
+
+                  - 8-bit: 256 levels/channel, 16.7M colors (good balance)
+                  - 10-bit: 1024 levels/channel, 1.07B colors (better gradients)
+                  - 12-bit: 4096 levels/channel, 68.7B colors (best quality)
+
+                Driver auto-adjusts BCM timing to maintain target refresh rate.
+
+            config HUB75_BIT_DEPTH_8
+                bool "8-bit (Good Balance)"
+
+            config HUB75_BIT_DEPTH_10
+                bool "10-bit (Better Gradients)"
+
+            config HUB75_BIT_DEPTH_12
+                bool "12-bit (Best Quality)"
+        endchoice
+
+        choice HUB75_CLOCK_SPEED
+            prompt "Output Clock Speed"
+            default HUB75_CLK_20MHZ
+            help
+                Pixel clock frequency for shifting data to panels.
+
+                Higher speeds = faster refresh, but may cause signal integrity
+                issues on long cables or with some panels.
+
+                  - 8 MHz: Very conservative
+                  - 10 MHz: Conservative, works with all panels
+                  - 16 MHz: Good balance
+                  - 20 MHz: Recommended default
+
+            config HUB75_CLK_8MHZ
+                bool "8 MHz (Very Conservative)"
+
+            config HUB75_CLK_10MHZ
+                bool "10 MHz (Conservative)"
+
+            config HUB75_CLK_16MHZ
+                bool "16 MHz (Good Balance)"
+
+            config HUB75_CLK_20MHZ
+                bool "20 MHz (Recommended)"
+        endchoice
+
+        config HUB75_MIN_REFRESH_RATE
+            int "Minimum Refresh Rate (Hz)"
+            default 60
+            range 30 240
+            help
+                Target minimum refresh rate in Hz.
+
+                Driver auto-adjusts lsbMsbTransitionBit to achieve this rate.
+                Higher refresh rates may reduce effective bit depth on lower bits.
+
+                Recommended values:
+                  - 60 Hz: Good balance (default)
+                  - 90-120 Hz: Reduce flicker for cameras
+                  - 240 Hz: High-speed capture, slight color trade-off
+
+        config HUB75_BRIGHTNESS
+            int "Default Brightness (0-255)"
+            default 128
+            range 0 255
+            help
+                Initial display brightness (0 = off, 255 = maximum).
+
+                Can be changed at runtime via driver.set_brightness().
+
+                Lower brightness reduces power consumption and heat.
+
+    endmenu
+
+    # ========================================
+    # Multi-Panel Layout
+    # ========================================
+
+    menu "Multi-Panel Layout"
+
+        config HUB75_LAYOUT_ROWS
+            int "Layout Rows"
+            default 1
+            range 1 8
+            help
+                Number of panels stacked vertically (rows in the grid).
+
+                For single panel or simple horizontal chain, set to 1.
+
+                Total panels = layout_rows × layout_cols
+                Example: 2 rows × 3 cols = 6 panels total
+
+        config HUB75_LAYOUT_COLS
+            int "Layout Columns"
+            default 1
+            range 1 8
+            help
+                Number of panels chained horizontally (columns per row).
+
+                Panels chain left-to-right (row-major order).
+
+                Example: 3 columns = 3 panels in a horizontal row
+                Total display width = panel_width × layout_cols
+
+        choice HUB75_LAYOUT_TYPE
+            prompt "Layout Type"
+            default HUB75_LAYOUT_HORIZONTAL
+            help
+                Panel chaining pattern and wiring orientation.
+
+                - HORIZONTAL: Single row, all panels upright (simplest)
+                - Serpentine: Alternate rows mounted upside down (saves cable length)
+                - Zigzag: All panels upright, cables snake back (longer cables)
+
+                Serpentine layouts require layout_rows > 1.
+                Zigzag layouts require layout_rows > 1 AND layout_cols > 1.
+
+            config HUB75_LAYOUT_HORIZONTAL
+                bool "Horizontal (Single Row)"
+                help
+                    Simple left-to-right horizontal chain.
+                    All panels mounted upright.
+
+                    Use for: Single panel or multiple panels in one row.
+                    Requires: layout_rows = 1
+
+            config HUB75_LAYOUT_TOP_LEFT_DOWN
+                bool "Top-Left-Down (Serpentine)"
+                help
+                    Start: Top-left corner
+                    Row 0: Left→right, panels upright
+                    Row 1: Right→left, panels upside down
+                    Row 2: Left→right, panels upright
+
+                    Saves cable length by mounting alternate rows upside down.
+
+            config HUB75_LAYOUT_TOP_RIGHT_DOWN
+                bool "Top-Right-Down (Serpentine)"
+                help
+                    Start: Top-right corner
+                    Row 0: Right→left, panels upright
+                    Row 1: Left→right, panels upside down
+
+            config HUB75_LAYOUT_BOTTOM_LEFT_UP
+                bool "Bottom-Left-Up (Serpentine)"
+                help
+                    Start: Bottom-left corner
+                    Bottom row: Left→right upright
+                    Next row up: Right→left upside down
+
+            config HUB75_LAYOUT_BOTTOM_RIGHT_UP
+                bool "Bottom-Right-Up (Serpentine)"
+                help
+                    Start: Bottom-right corner
+                    Bottom row: Right→left upright
+                    Next row up: Left→right upside down
+
+            config HUB75_LAYOUT_TOP_LEFT_DOWN_ZIGZAG
+                bool "Top-Left-Down (Zigzag - All Upright)"
+                help
+                    Start: Top-left corner
+                    Row 0: Left→right, all upright
+                    Row 1: Right→left, all upright (cable routes back)
+
+                    All panels mounted same orientation.
+                    Requires longer cables between rows.
+
+            config HUB75_LAYOUT_TOP_RIGHT_DOWN_ZIGZAG
+                bool "Top-Right-Down (Zigzag)"
+
+            config HUB75_LAYOUT_BOTTOM_LEFT_UP_ZIGZAG
+                bool "Bottom-Left-Up (Zigzag)"
+
+            config HUB75_LAYOUT_BOTTOM_RIGHT_UP_ZIGZAG
+                bool "Bottom-Right-Up (Zigzag)"
+        endchoice
+
+    endmenu
+
+    # ========================================
+    # Pin Configuration
+    # ========================================
+
+    menu "Pin Configuration"
+        visible if HUB75_BOARD_CUSTOM
+
+        comment "Data Pins (Upper Half)"
+
+        config HUB75_PIN_R1
+            int "R1 Pin"
+            default 42 if IDF_TARGET_ESP32S3
+            default 20 if IDF_TARGET_ESP32P4
+            default 25
+            range -1 48
+            help
+                Red data for upper half of panel.
+
+        config HUB75_PIN_G1
+            int "G1 Pin"
+            default 41 if IDF_TARGET_ESP32S3
+            default 21 if IDF_TARGET_ESP32P4
+            default 26
+            range -1 48
+            help
+                Green data for upper half of panel.
+
+        config HUB75_PIN_B1
+            int "B1 Pin"
+            default 40 if IDF_TARGET_ESP32S3
+            default 22 if IDF_TARGET_ESP32P4
+            default 27
+            range -1 48
+            help
+                Blue data for upper half of panel.
+
+        comment "Data Pins (Lower Half)"
+
+        config HUB75_PIN_R2
+            int "R2 Pin"
+            default 38 if IDF_TARGET_ESP32S3
+            default 23 if IDF_TARGET_ESP32P4
+            default 14
+            range -1 48
+            help
+                Red data for lower half of panel.
+
+        config HUB75_PIN_G2
+            int "G2 Pin"
+            default 39 if IDF_TARGET_ESP32S3
+            default 26 if IDF_TARGET_ESP32P4
+            default 12
+            range -1 48
+            help
+                Green data for lower half of panel.
+
+        config HUB75_PIN_B2
+            int "B2 Pin"
+            default 37 if IDF_TARGET_ESP32S3
+            default 27 if IDF_TARGET_ESP32P4
+            default 13
+            range -1 48
+            help
+                Blue data for lower half of panel.
+
+        comment "Address Lines"
+
+        config HUB75_PIN_A
+            int "A Pin"
+            default 45 if IDF_TARGET_ESP32S3
+            default 1 if IDF_TARGET_ESP32P4
+            default 23
+            range -1 48
+            help
+                Address line A (LSB).
+
+        config HUB75_PIN_B
+            int "B Pin"
+            default 36 if IDF_TARGET_ESP32S3
+            default 2 if IDF_TARGET_ESP32P4
+            default 19
+            range -1 48
+            help
+                Address line B.
+
+        config HUB75_PIN_C
+            int "C Pin"
+            default 48 if IDF_TARGET_ESP32S3
+            default 3 if IDF_TARGET_ESP32P4
+            default 5
+            range -1 48
+            help
+                Address line C.
+
+        config HUB75_PIN_D
+            int "D Pin"
+            default 35 if IDF_TARGET_ESP32S3
+            default 4 if IDF_TARGET_ESP32P4
+            default 17
+            range -1 48
+            help
+                Address line D.
+
+        config HUB75_PIN_E
+            int "E Pin (Set to -1 if unused)"
+            default 21 if IDF_TARGET_ESP32S3
+            default 5 if IDF_TARGET_ESP32P4
+            default 18
+            range -1 48
+            help
+                Address line E (MSB).
+
+                Required for 64-row panels (1/32 scan).
+                Set to -1 for 32-row or 16-row panels.
+
+        comment "Control Signals"
+
+        config HUB75_PIN_LAT
+            int "LAT Pin (Latch)"
+            default 47 if IDF_TARGET_ESP32S3
+            default 6 if IDF_TARGET_ESP32P4
+            default 4
+            range -1 48
+            help
+                Latch signal (transfers shift register data to output).
+
+        config HUB75_PIN_OE
+            int "OE Pin (Output Enable)"
+            default 14 if IDF_TARGET_ESP32S3
+            default 45 if IDF_TARGET_ESP32P4
+            default 15
+            range -1 48
+            help
+                Output Enable (active low - enables LED drivers).
+                Controls brightness via PWM timing.
+
+        config HUB75_PIN_CLK
+            int "CLK Pin (Clock)"
+            default 2 if IDF_TARGET_ESP32S3
+            default 47 if IDF_TARGET_ESP32P4
+            default 16
+            range -1 48
+            help
+                Clock signal (shifts data into registers).
+
+    endmenu
+
+    # ========================================
+    # Timing Parameters
+    # ========================================
+
+    menu "Timing"
+
+        config HUB75_LATCH_BLANKING
+            int "Latch Blanking Cycles"
+            default 1
+            range 0 10
+            help
+                Number of clock cycles to keep OE (output enable) HIGH during
+                the LAT (latch) pulse.
+
+                Default is 1. Increase if experiencing ghosting between rows.
+
+                Higher values add more blanking time during row transitions,
+                which can help eliminate ghosting on some panels but reduces
+                overall brightness slightly.
+
+    endmenu
+
+    # ========================================
+    # Features
+    # ========================================
+
+    menu "Features"
+
+        config HUB75_DOUBLE_BUFFER
+            bool "Enable double buffering"
+            default n
+            help
+                Allocates two framebuffers for flicker-free updates.
+                Doubles memory usage but allows smooth animations.
+
+                Recommended for applications with frequent full-screen updates
+                or animations that need to be prepared off-screen.
+
+        config HUB75_TEMPORAL_DITHER
+            bool "Enable temporal dithering"
+            default n
+            help
+                Improves color depth perception through temporal dithering.
+                Adds slight CPU overhead during pixel writes.
+
+                Useful for achieving better color gradients when using lower
+                bit depths (8-bit). Has minimal impact on 10/12-bit modes.
+
+        config HUB75_CLK_PHASE_INVERTED
+            bool "Invert clock phase"
+            default y if HUB75_DRIVER_MBI5124
+            default n
+            help
+                Inverts the clock signal phase.
+
+                Required for MBI5124 driver chips (auto-enabled when MBI5124
+                is selected). Most other driver chips do not need this.
+
+                Leave disabled unless your panel specifically requires it.
+
+        config HUB75_IRAM_OPTIMIZATION
+            bool "Place hot functions in IRAM"
+            default y
+            help
+                Places pixel-setting and color conversion functions in IRAM
+                to avoid flash cache stalls during rendering.
+
+                Recommended for best performance. Uses ~2-4 KB of IRAM.
+                Disable only if IRAM space is critically constrained.
+
+    endmenu
+
+    # ========================================
+    # Color Settings
+    # ========================================
+
+    menu "Color"
+
+        choice HUB75_GAMMA_MODE
+            prompt "Gamma Correction Mode"
+            default HUB75_GAMMA_CIE1931
+            help
+                Gamma correction mode for color output.
+
+                - CIE1931: Standard perceptual lightness curve (recommended)
+                - Linear: No gamma correction (1:1 mapping)
+                - None: Alias for Linear
+
+                CIE1931 provides better visual color gradients by matching
+                human perception of brightness. Linear/None provides direct
+                hardware mapping but may appear less smooth.
+
+            config HUB75_GAMMA_CIE1931
+                bool "CIE1931 (Perceptual)"
+
+            config HUB75_GAMMA_LINEAR
+                bool "Linear (No Correction)"
+
+            config HUB75_GAMMA_NONE
+                bool "None (Same as Linear)"
+        endchoice
+
+    endmenu
+
+    # ========================================
+    # Debug Options
+    # ========================================
+
+    menu "Debug"
+
+        config HUB75_DEBUG_TIMING
+            bool "Enable timing analysis logs"
+            default n
+            help
+                Logs BCM timing calculations, refresh rate predictions,
+                descriptor counts, and lsbMsbTransitionBit values at startup.
+
+                Useful for debugging performance issues or understanding
+                why a particular refresh rate was selected.
+
+        config HUB75_DEBUG_DESCRIPTORS
+            bool "Dump DMA descriptor chain"
+            default n
+            depends on HUB75_DEBUG_TIMING
+            help
+                Logs the full DMA descriptor chain layout at initialization.
+                Shows descriptor addresses, buffer pointers, and repetition counts.
+
+                VERY VERBOSE - use only for debugging DMA-related issues.
+                Output can be several hundred lines for typical configurations.
+
+    endmenu
+
+endmenu

@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: 2025 Stuart Parmenter
+# SPDX-License-Identifier: MIT
+
+menu "HUB75 Example Selection"
+
+    choice EXAMPLE_SELECTION
+        prompt "Example to Build"
+        default EXAMPLE_SMOKE_TEST
+        help
+            Select which example to build in the main/ directory.
+
+            Examples are also available in examples/ and can be built standalone
+            by navigating to the example directory and running 'idf.py build'.
+
+            All HUB75 hardware configuration (pins, panel settings, etc.) is
+            available under "Component config → HUB75 RGB LED Matrix Driver".
+
+        config EXAMPLE_SMOKE_TEST
+            bool "Smoke Test (Quick Validation)"
+            help
+                Simple colored squares in corners + center cross.
+                Fast build for quick hardware validation.
+
+        config EXAMPLE_SIMPLE_COLORS
+            bool "01_basic/simple_colors"
+            help
+                RGB corner squares, white square, cyan cross.
+                Basic pixel drawing demonstration.
+
+        config EXAMPLE_GRADIENTS
+            bool "01_basic/gradients"
+            help
+                Smooth color transitions (horizontal, vertical, radial).
+                Demonstrates color blending and gradient rendering.
+
+        config EXAMPLE_BRIGHTNESS
+            bool "01_basic/brightness"
+            help
+                Brightness control: fade in/out, pulse animation.
+                Shows runtime brightness adjustment.
+
+        config EXAMPLE_TWO_HORIZONTAL
+            bool "02_multi_panel/two_horizontal"
+            help
+                2×1 layout (128×64 from two 64×64 panels).
+                Demonstrates horizontal panel chaining.
+
+        config EXAMPLE_THREE_HORIZONTAL
+            bool "02_multi_panel/three_horizontal"
+            help
+                3×1 layout (192×64 from three 64×64 panels).
+                Shows longer horizontal chains.
+
+        config EXAMPLE_SERPENTINE
+            bool "02_multi_panel/serpentine"
+            help
+                2×1 serpentine wiring pattern demonstration.
+                Explains coordinate remapping for alternate rows.
+
+        config EXAMPLE_LVGL_DEMO
+            bool "03_lvgl/simple_demo"
+            help
+                LVGL integration: labels, buttons, brightness slider.
+                Requires LVGL dependency (pulled via idf_component.yml).
+    endchoice
+
+endmenu

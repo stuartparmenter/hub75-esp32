@@ -1,0 +1,78 @@
+# Multi-Panel Layout Configuration Demo
+#
+# This example demonstrates different ways to chain multiple HUB75 panels.
+# Edit the layout settings below to match your physical panel arrangement.
+# See README.md for wiring diagrams and physical panel orientation.
+
+# HUB75 Panel Settings (dimensions of a SINGLE panel)
+CONFIG_HUB75_PANEL_WIDTH=64
+CONFIG_HUB75_PANEL_HEIGHT=64
+CONFIG_HUB75_SCAN_1_32=y
+CONFIG_HUB75_WIRING_STANDARD=y
+CONFIG_HUB75_DRIVER_GENERIC=y
+
+# ============================================================================
+# CURRENT LAYOUT: 2 panels horizontal (side-by-side)
+# ============================================================================
+CONFIG_HUB75_LAYOUT_ROWS=1
+CONFIG_HUB75_LAYOUT_COLS=2
+CONFIG_HUB75_LAYOUT_HORIZONTAL=y
+
+# ============================================================================
+# OTHER LAYOUT OPTIONS (uncomment to try different arrangements)
+# ============================================================================
+
+# --- 3 panels horizontal (side-by-side-by-side) ---
+# Total virtual display: 192x64 pixels
+# Wiring: [Panel 0] → [Panel 1] → [Panel 2]
+#
+# CONFIG_HUB75_LAYOUT_ROWS=1
+# CONFIG_HUB75_LAYOUT_COLS=3
+# CONFIG_HUB75_LAYOUT_HORIZONTAL=y
+
+# --- 2x2 serpentine grid (alternate rows upside down) ---
+# Total virtual display: 128x128 pixels
+# Panel orientation: Row 0 panels upright, Row 1 panels upside down
+# Wiring: [Panel 0] → [Panel 1] ↓
+#                    [Panel 3] ← [Panel 2]
+# Saves cable length between rows but requires physical panel rotation
+#
+# CONFIG_HUB75_LAYOUT_ROWS=2
+# CONFIG_HUB75_LAYOUT_COLS=2
+# CONFIG_HUB75_LAYOUT_TOP_LEFT_DOWN=y
+
+# --- 3x2 serpentine grid (6 panels, alternate rows upside down) ---
+# Total virtual display: 192x128 pixels
+# Wiring: [Panel 0] → [Panel 1] → [Panel 2] ↓
+#                    [Panel 5] ← [Panel 4] ← [Panel 3]
+#
+# CONFIG_HUB75_LAYOUT_ROWS=2
+# CONFIG_HUB75_LAYOUT_COLS=3
+# CONFIG_HUB75_LAYOUT_TOP_LEFT_DOWN=y
+
+# --- 2x2 zigzag grid (all panels upright, longer cables) ---
+# Total virtual display: 128x128 pixels
+# Panel orientation: All panels remain upright (no physical rotation)
+# Wiring: [Panel 0] → [Panel 1] ↓
+#         [Panel 2] ← [Panel 3] (cable routes back)
+# Requires longer cables but simpler physical installation
+#
+# CONFIG_HUB75_LAYOUT_ROWS=2
+# CONFIG_HUB75_LAYOUT_COLS=2
+# CONFIG_HUB75_LAYOUT_TOP_LEFT_DOWN_ZIGZAG=y
+
+# ============================================================================
+# Performance Settings
+# ============================================================================
+CONFIG_HUB75_BIT_DEPTH_8=y
+CONFIG_HUB75_CLK_10MHZ=y
+CONFIG_HUB75_MIN_REFRESH_RATE=60
+CONFIG_HUB75_BRIGHTNESS=255
+
+# Component features
+CONFIG_HUB75_DOUBLE_BUFFER=n
+CONFIG_HUB75_TEMPORAL_DITHER=n
+CONFIG_HUB75_IRAM_OPTIMIZATION=y
+
+# Board preset (configure pins via menuconfig)
+CONFIG_HUB75_BOARD_CUSTOM=y

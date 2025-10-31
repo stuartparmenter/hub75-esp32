@@ -21,7 +21,6 @@ Comprehensive technical documentation for the HUB75 RGB LED Matrix Driver for ES
 - **[MULTI_PANEL.md](MULTI_PANEL.md)** - Panel layouts, coordinate remapping, serpentine vs zigzag
 
 ### Reference
-- **[MEMORY_USAGE.md](MEMORY_USAGE.md)** - Memory calculations, buffer sizes, optimization strategies
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues, debugging techniques, platform-specific problems
 
 ## Quick Links by Topic
@@ -41,7 +40,7 @@ Comprehensive technical documentation for the HUB75 RGB LED Matrix Driver for ES
 → [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Debug common issues
 
 ### "I need to optimize memory usage"
-→ [MEMORY_USAGE.md](MEMORY_USAGE.md) - Memory breakdown and calculations
+→ [PLATFORMS.md](PLATFORMS.md) - Memory optimization strategies, calculations, and profiling
 
 ## Document Conventions
 
@@ -71,13 +70,3 @@ When updating documentation:
 3. Add cross-references to related docs
 4. Update this index if adding new files
 5. Follow markdown best practices
-
-## Feedback
-
-Found an issue or have a suggestion? Please open an issue at:
-https://github.com/stuartparmenter/esp-hub75/issues
-
----
-
-**Last Updated**: 2025-01-29
-**Driver Version**: 1.0.0

@@ -185,66 +185,29 @@ Same as ESP32-P4 **but NO clock gating** (MSB bit unused, BCM via padding only).
 
 ## Memory Layout
 
-### GDMA/I2S Memory (ESP32/S2/S3)
+The driver uses several memory categories, each serving a specific purpose:
 
-**Location**: Internal SRAM (DMA-capable, not PSRAM)
+1. **Framebuffer** - Stores current display image in platform-native format (internal SRAM)
+2. **Row Buffers** - Bit plane data transmitted by DMA (location varies by platform)
+3. **DMA Descriptors** - Hardware instructions for the DMA engine (GDMA/I2S only)
+4. **PARLIO Buffers** - Bit plane data with BCM padding (ESP32-P4/C6, PSRAM)
 
-**Buffers**:
-```
-Row buffers (per bit plane per row):
-  [Pixel Data: width×chain_length pixels, OE=HIGH]
-  [LAT pulse: 1 pixel with LAT=HIGH]
-  [Latch blanking: latch_blanking pixels, OE=HIGH]
-```
+**Platform Memory Strategies:**
 
-**Example** (64×64 panel, 8-bit, 32 rows):
-- Rows: 32
-- Bit planes: 8
-- Buffers per row: 8 (one per bit)
-- Buffer size: ~(64 + 1 + 1) × 4 bytes = ~264 bytes
-- **Total row buffers**: 32 × 8 × 264 ≈ 67 KB
+- **GDMA/I2S (ESP32/S2/S3)**: All buffers in internal SRAM, BCM timing via descriptor duplication
+  - Example (64×64, 8-bit): ~57 KB total (framebuffer + row buffers + descriptors)
 
-**Descriptors**: ~8-25 KB (varies with bit depth and lsbMsbTransitionBit)
+- **PARLIO (ESP32-P4/C6)**: Buffers in PSRAM, BCM timing via buffer padding
+  - Example (64×64, 8-bit): ~16 KB internal SRAM + ~284 KB PSRAM
+  - Advantage: Frees internal SRAM for application code
 
-**Total GDMA/I2S**: ~75-100 KB internal SRAM
+**Memory usage varies by:**
+- Platform (SRAM vs PSRAM allocation)
+- Panel size (larger panels = more buffers)
+- Bit depth (more bit planes = more memory)
+- Double buffering (2× framebuffer memory)
 
-### PARLIO Memory (ESP32-P4)
-
-**Location**: **PSRAM** (via EDMA)
-
-**Buffers**:
-```
-Row buffers (per bit plane per row):
-  [Pixel Data | LAT pulse | Latch blanking | PADDING (BCM timing)]
-```
-
-**Padding size** (per bit plane):
-```
-padding = base_padding + (2^(bit - lsbMsbTransitionBit - 1) × width)
-```
-
-**Example** (64×64 panel, 8-bit, lsbMsbTransitionBit=1):
-- Bit 0: Minimal padding (~3 words)
-- Bit 7: Maximum padding (~3,073 words = 32× Bit 0)
-
-**Total PARLIO**: ~284 KB PSRAM for 64×64 panel
-
-**Advantage**: Frees internal SRAM for application code/heap.
-
-### Framebuffer Memory (All Platforms)
-
-**Format**: Platform-native packed RGB (uint32_t per pixel)
-- 8-bit: R8:G8:B8 packed
-- 10-bit: R10:G10:B10 packed
-- 12-bit: R12:G12:B12 packed
-
-**Location**: Internal SRAM (not PSRAM)
-
-**Size**: `width × height × 4 bytes`
-
-**Example** (64×64 panel):
-- Single buffer: 64 × 64 × 4 = 16 KB
-- Double buffer: 32 KB
+**For detailed formulas, calculations, optimization strategies, and platform-specific memory breakdowns**, see **[PLATFORMS.md](PLATFORMS.md)**.
 
 ---
 
@@ -332,13 +295,13 @@ Functions marked with `HUB75_IRAM` (wraps `IRAM_ATTR`) are placed in IRAM to avo
 
 ## Related Documentation
 
-- **[PLATFORMS.md](PLATFORMS.md)** - Platform-specific implementation details
-- **[MEMORY_USAGE.md](MEMORY_USAGE.md)** - Detailed memory calculations
+- **[PLATFORMS.md](PLATFORMS.md)** - Platform-specific implementation details and memory calculations
 - **[COLOR_GAMMA.md](COLOR_GAMMA.md)** - Color correction and bit depth
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Debugging guide
 
 ---
 
-**For implementation details**, see platform-specific files:
-- ESP32/S2: `src/platforms/i2s/i2s_dma.cpp`
-- ESP32-S3: `src/platforms/gdma/gdma_dma.cpp`
-- ESP32-P4: `src/platforms/parlio/parlio_dma.cpp`
+**For implementation details**, see platform-specific source files:
+- ESP32/S2: [`src/platforms/i2s/i2s_dma.cpp`](../../components/hub75/src/platforms/i2s/i2s_dma.cpp)
+- ESP32-S3: [`src/platforms/gdma/gdma_dma.cpp`](../../components/hub75/src/platforms/gdma/gdma_dma.cpp)
+- ESP32-P4: [`src/platforms/parlio/parlio_dma.cpp`](../../components/hub75/src/platforms/parlio/parlio_dma.cpp)

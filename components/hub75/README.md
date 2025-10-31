@@ -140,11 +140,12 @@ Double buffering doubles memory usage but enables tear-free animation. PARLIO us
 - `void set_brightness(uint8_t brightness)` - Set display brightness (0-255)
 - `void set_intensity(float intensity)` - Set intensity multiplier (0.0-1.0) for smooth dimming
 - `uint8_t get_brightness()` - Get current brightness value
-- `void set_gamma_mode(Hub75GammaMode mode)` - Set gamma correction mode
-  - `Hub75GammaMode::NONE` - No gamma correction (linear)
-  - `Hub75GammaMode::CIE1931` - CIE 1931 standard (recommended)
-  - `Hub75GammaMode::GAMMA_2_2` - Gamma 2.2 correction
-- `Hub75GammaMode get_gamma_mode()` - Get current gamma mode
+
+**Gamma Correction:**
+Gamma correction mode is set at initialization via `config.gamma_mode` and cannot be changed at runtime:
+- `Hub75GammaMode::NONE` - No gamma correction (linear)
+- `Hub75GammaMode::CIE1931` - CIE 1931 standard (recommended, default)
+- `Hub75GammaMode::GAMMA_2_2` - Gamma 2.2 correction
 
 **Dual-Mode Brightness System:**
 - **Basis brightness** (0-255): Adjusts hardware OE (output enable) timing in DMA buffers

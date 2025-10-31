@@ -72,11 +72,6 @@ class GdmaDma : public PlatformDma {
                    Hub75ColorOrder color_order, bool big_endian) override;
 
   /**
-   * @brief Set gamma correction LUT
-   */
-  void set_lut(const uint16_t *lut) override;
-
-  /**
    * @brief Clear all pixels to black
    */
   void clear() override;
@@ -120,7 +115,6 @@ class GdmaDma : public PlatformDma {
   // BCM timing calculation (calculates lsbMsbTransitionBit for OE control)
   void calculate_bcm_timings();
 
-  const Hub75Config config_;
   gdma_channel_handle_t dma_chan_;
   const uint8_t bit_depth_;      // Bit depth from config (6, 7, 8, 10, or 12)
   uint8_t lsbMsbTransitionBit_;  // BCM optimization threshold (calculated at init)
@@ -158,9 +152,6 @@ class GdmaDma : public PlatformDma {
   // Brightness control (implementation of base class interface)
   uint8_t basis_brightness_;  // 1-255
   float intensity_;           // 0.0-1.0
-
-  // Gamma correction LUT (owned by Hub75Driver, just a pointer here)
-  const uint16_t *lut_;
 };
 
 }  // namespace hub75

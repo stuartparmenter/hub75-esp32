@@ -13,6 +13,9 @@
 
 #include "hub75_types.h"
 #include "hub75_config.h"
+#include "../color/color_lut.h"
+#include "../panels/scan_patterns.h"  // For Coords and ScanPatternRemap
+#include "../panels/panel_layout.h"   // For PanelLayoutRemap
 #include <stdint.h>
 #include <stddef.h>
 
@@ -28,6 +31,70 @@ class PlatformDma {
  public:
   virtual ~PlatformDma() = default;
 
+ protected:
+  /**
+   * @brief Protected constructor - initializes LUT based on config
+   * @param config Hub75 configuration with gamma mode and bit depth
+   */
+  PlatformDma(const Hub75Config &config);
+
+  const Hub75Config &config_;
+  const uint16_t *lut_;
+
+  // ============================================================================
+  // Coordinate Transformation Helper
+  // ============================================================================
+
+  /**
+   * @brief Result of coordinate transformation
+   */
+  struct TransformedCoords {
+    uint16_t x, y, row;
+    bool is_lower;
+  };
+
+  /**
+   * @brief Transform virtual coordinates to physical DMA buffer coordinates
+   *
+   * Applies panel layout remapping and scan pattern remapping, then calculates
+   * row index and upper/lower half.
+   *
+   * @param px Input X coordinate (virtual display space)
+   * @param py Input Y coordinate (virtual display space)
+   * @param needs_layout_remap Whether layout remapping is needed
+   * @param needs_scan_remap Whether scan pattern remapping is needed
+   * @param layout Panel layout type
+   * @param scan_wiring Scan wiring pattern
+   * @param panel_width Single panel width
+   * @param panel_height Single panel height
+   * @param layout_rows Number of panel rows (layout_rows)
+   * @param layout_cols Number of panel columns (layout_cols)
+   * @param dma_width DMA buffer width
+   * @param num_rows Number of row pairs (panel_height / 2)
+   * @return Transformed coordinates with row index and half indicator
+   */
+  static HUB75_IRAM inline TransformedCoords transform_coordinate(uint16_t px, uint16_t py, bool needs_layout_remap,
+                                                                  bool needs_scan_remap, PanelLayout layout,
+                                                                  ScanPattern scan_wiring, uint16_t panel_width,
+                                                                  uint16_t panel_height, uint16_t layout_rows,
+                                                                  uint16_t layout_cols, uint16_t dma_width,
+                                                                  uint16_t num_rows) {
+    Coords c = {.x = px, .y = py};
+
+    // Step 1: Panel layout remapping (if multi-panel grid)
+    if (needs_layout_remap) {
+      c = PanelLayoutRemap::remap(c, layout, panel_width, panel_height, layout_rows, layout_cols);
+    }
+
+    // Step 2: Scan pattern remapping (if non-standard panel)
+    if (needs_scan_remap) {
+      c = ScanPatternRemap::remap(c, scan_wiring, panel_width);
+    }
+
+    return {.x = c.x, .y = c.y, .row = static_cast<uint16_t>(c.y % num_rows), .is_lower = (c.y >= num_rows)};
+  }
+
+ public:
   /**
    * @brief Initialize the DMA engine
    */
@@ -89,14 +156,6 @@ class PlatformDma {
   virtual void draw_pixels(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buffer,
                            Hub75PixelFormat format, Hub75ColorOrder color_order, bool big_endian) {
     // Default: no-op (platforms using framebuffer don't need this)
-  }
-
-  /**
-   * @brief Set gamma correction LUT
-   * @param lut Pointer to 256-entry LUT (8-bit input -> corrected output)
-   */
-  virtual void set_lut(const uint16_t *lut) {
-    // Default: no-op
   }
 
   /**

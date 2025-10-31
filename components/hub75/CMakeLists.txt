@@ -7,6 +7,7 @@ idf_component_register(
         "src/color/color_lut.cpp"
         "src/color/color_convert.cpp"
         "src/platforms/platform_detect.cpp"
+        "src/platforms/platform_dma.cpp"
         "src/drivers/fm6126a.cpp"
         # Platform-specific sources added conditionally below
     INCLUDE_DIRS

@@ -276,6 +276,38 @@ Solution: Match layout type to physical installation
 Or: Rewire panels to match layout
 ```
 
+### Scrambled Display Across Panels
+
+**Causes**:
+- Wrong layout type (e.g., HORIZONTAL when serpentine wiring)
+- Wrong scan_wiring pattern
+
+**Fix**:
+1. Verify layout type matches physical wiring
+2. Check panel orientation (serpentine = alternate rows upside down)
+3. Try different scan_wiring patterns if needed
+
+### Colors Correct on Panel 0, Wrong on Others
+
+**Causes**:
+- Mixed panel types (different shift drivers)
+- One panel needs FM6126A init, others don't
+
+**Fix**:
+- Use panels of same model/manufacturer
+- Try FM6126A shift driver (works for most modern panels)
+
+### Panel Shows Content from Wrong Position
+
+**Causes**:
+- Wrong layout_rows or layout_cols
+- Wrong layout type
+
+**Debug**:
+1. Count physical panels horizontally → `layout_cols`
+2. Count physical panel rows vertically → `layout_rows`
+3. Check if alternate rows are upside down → serpentine, else HORIZONTAL/zigzag
+
 ---
 
 ## Platform-Specific Issues
@@ -353,6 +385,34 @@ Check: MSB (bit 15) set correctly in pixel data
 Expected: esp_cache_msync() takes ~0.5-2ms per frame update
 Not a bug: PSRAM requires cache synchronization
 ```
+
+---
+
+## Color & Gamma Issues
+
+### Banding in Gradients
+
+**Solution**:
+1. Increase bit depth (8→10 or 10→12)
+2. Enable temporal dithering
+3. Verify CIE 1931 gamma is enabled (always on by default)
+
+### Colors Look Wrong
+
+**Causes**:
+- Wrong shift driver (try FM6126A)
+- Swapped R/G/B pins (check pin mapping)
+- Panel requires specific shift driver initialization
+
+### Brightness Changes Are Slow
+
+**Expected**: `set_brightness()` modifies all DMA buffers (~1-2ms)
+**Not a bug**: This is by design for OE bit manipulation
+
+### Dark Colors Flickering
+
+**Cause**: Panel LED driver characteristics at low brightness
+**Solution**: Increase minimum brightness or adjust panel OE timing
 
 ---
 
@@ -496,12 +556,6 @@ When reporting issues, include:
 4. **Code**:
    - Minimal reproducible example
    - Example name if using provided examples
-
-### Where to Ask
-
-- **GitHub Issues**: https://github.com/stuartparmenter/esp-hub75/issues
-- **ESP32 Forums**: https://www.esp32.com/
-- Include "HUB75" in title for visibility
 
 ---
 

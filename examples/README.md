@@ -85,26 +85,15 @@ LVGL GUI library integration:
 - Ribbon cables for chaining
 - Higher current 5V power supply (10-15A for three 64×64 panels)
 
-## Common Issues
+## Troubleshooting
 
-### Black Screen
-- Wrong board preset or pin configuration
-- Try `shift_driver = FM6126A` if panel doesn't light up
-- Verify 5V power supply is connected and adequate
+Having issues? See the comprehensive **[Troubleshooting Guide](../docs/TROUBLESHOOTING.md)**.
 
-### Garbled Display
-- Wrong `scan_wiring` pattern → try FOUR_SCAN variants
-- Wrong `scan_pattern` → match to panel height (64px = 1/32 scan)
-- Incorrect pin mapping → double-check R1/G1/B1/R2/G2/B2 assignments
-
-### Flickering
-- Refresh rate too low → driver auto-adjusts `lsbMsbTransitionBit`
-- Try increasing `min_refresh_rate` in menuconfig
-
-### Build Errors
-- Missing sdkconfig → run `idf.py menuconfig` first
-- LVGL not found → ensure `idf_component.yml` exists in LVGL example
-- Wrong ESP-IDF target → run `idf.py set-target <chip>`
+**Quick checks:**
+- **Black screen** → Wrong board preset or try `shift_driver = FM6126A`
+- **Garbled display** → Wrong scan pattern or scan wiring
+- **Flickering** → Increase `min_refresh_rate` in menuconfig
+- **Build errors** → Run `idf.py menuconfig` to configure, or see [Configuration](../docs/MENUCONFIG.md)
 
 ## Documentation
 

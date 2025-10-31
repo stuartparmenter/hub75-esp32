@@ -322,37 +322,15 @@ config.temporal_dither = true;
 - Keep CIE 1931 gamma enabled
 - Calibrate brightness for ambient lighting
 
----
-
-## Troubleshooting
-
-### Banding in Gradients
-**Solution**:
-1. Increase bit depth (8→10 or 10→12)
-2. Enable temporal dithering
-3. Verify CIE 1931 gamma is enabled
-
-### Colors Look Wrong
-**Causes**:
-- Wrong shift driver (try FM6126A)
-- Swapped R/G/B pins
-- Gamma disabled (shouldn't be possible, always on)
-
-### Brightness Changes Are Slow
-**Expected**: `set_brightness()` modifies all DMA buffers (~1-2ms)
-**Not a bug**: This is by design
-
-### Dark Colors Flickering
-**Cause**: Panel LED driver characteristics at low brightness
-**Solution**: Increase minimum brightness or adjust panel OE timing
+**For troubleshooting color and gamma issues** (banding, wrong colors, brightness, flickering), see **[Troubleshooting Guide](TROUBLESHOOTING.md#color--gamma-issues)**.
 
 ---
 
 ## Related Documentation
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - BCM timing and bit planes
-- **[PLATFORMS.md](PLATFORMS.md)** - Platform-specific memory layouts
-- **[MEMORY_USAGE.md](MEMORY_USAGE.md)** - Bit depth memory impact
+- **[PLATFORMS.md](PLATFORMS.md)** - Platform-specific implementation and memory details
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Color and gamma troubleshooting
 
 ---
 

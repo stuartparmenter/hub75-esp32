@@ -166,18 +166,9 @@ These pins are auto-populated when `idf.py set-target esp32p4` and Custom mode i
 
 ---
 
-## Adding Custom Boards
+## Contributing Board Definitions
 
-### Via Menuconfig (Runtime)
-
-1. Select `Board Preset: Custom`
-2. Navigate to `Pin Configuration` menu
-3. Set all 13 pins manually
-4. Build and test
-
-### Via Code (Compile-time)
-
-To add a new board preset permanently:
+To add a new board preset to the codebase permanently:
 
 1. **Add Kconfig choice** in `main/Kconfig.projbuild`:
 ```kconfig
@@ -262,25 +253,7 @@ HUB75 Pin Configuration:
 - No scrambled output
 - Display lights up
 
----
-
-## Troubleshooting
-
-### Wrong Colors
-- **R1/G1/B1 swapped**: Check data pin assignments
-- **R2/G2/B2 swapped**: Check lower half pins
-- Try FM6126A shift driver if GENERIC shows wrong colors
-
-### Scrambled Display
-- **Wrong scan pattern**: Check panel height matches scan setting
-- **Wrong scan wiring**: Try FOUR_SCAN variants
-- **Pin conflict**: Verify no GPIO conflicts with flash/USB/etc.
-
-### Panel Doesn't Light Up
-- **Power**: Verify 5V supply connected and adequate amperage
-- **Shift driver**: Try FM6126A instead of GENERIC
-- **Pin configuration**: Double-check all 13 pins are correct
-- **E pin**: For 64-row panels, E pin must be connected and configured
+**For troubleshooting pin and board issues** (wrong colors, scrambled display, panel doesn't light up), see **[Troubleshooting Guide](TROUBLESHOOTING.md)**.
 
 ---
 

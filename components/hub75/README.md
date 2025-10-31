@@ -1,9 +1,8 @@
 # HUB75 DMA Driver Component
 
-ESP-IDF component for driving HUB75 RGB LED matrix panels via DMA. Supports ESP32, ESP32-S2, ESP32-S3, ESP32-C6, and ESP32-P4.
+Complete API documentation and configuration reference for the HUB75 DMA driver component.
 
-**Repository:** https://github.com/stuartparmenter/esp-hub75
-**Examples & Documentation:** See main repository for working examples and detailed documentation
+ESP-IDF component for driving HUB75 RGB LED matrix panels via DMA. Supports ESP32, ESP32-S2, ESP32-S3, ESP32-C6, and ESP32-P4.
 
 ## Key Features
 
@@ -18,7 +17,17 @@ ESP-IDF component for driving HUB75 RGB LED matrix panels via DMA. Supports ESP3
 
 ### Option 1: Component Manager (Recommended)
 
-In your project's `idf_component.yml`:
+**From ESP Component Registry:**
+
+```yaml
+dependencies:
+  hub75:
+    version: "^1.0.0"
+```
+
+Browse versions on the [ESP Component Registry](https://components.espressif.com/components/stuartparmenter/esp-hub75).
+
+**From Git:**
 
 ```yaml
 dependencies:
@@ -27,7 +36,7 @@ dependencies:
     path: components/hub75  # Important: point to subdirectory!
 ```
 
-For local development:
+**For local development:**
 
 ```yaml
 dependencies:
@@ -150,351 +159,80 @@ Double buffering doubles memory usage but enables tear-free animation. PARLIO us
 
 ## Configuration Options
 
-### Hardware Specifications
+### Quick Examples
 
+**Single 64×64 panel:**
 ```cpp
-Hub75Config config{};  // Start with defaults
-
-// Single Panel Hardware
-config.panel_width = 64;                               // Single panel width in pixels
-config.panel_height = 64;                              // Single panel height in pixels
-config.scan_pattern = Hub75ScanPattern::SCAN_1_32;     // Hardware scan pattern
-config.scan_wiring = ScanPattern::STANDARD_TWO_SCAN;   // Coordinate remapping
-config.shift_driver = ShiftDriver::GENERIC;            // LED driver chip type
+Hub75Config config{};
+config.panel_width = 64;
+config.panel_height = 64;
+config.scan_pattern = Hub75ScanPattern::SCAN_1_32;
+config.shift_driver = ShiftDriver::FM6126A;  // Try this if GENERIC doesn't work
 ```
 
-**Scan Pattern Options:**
-- `SCAN_1_2` - 2-row pairs (4px high panels)
-- `SCAN_1_4` - 4-row pairs (8px high panels)
-- `SCAN_1_8` - 8-row pairs (16px high panels)
-- `SCAN_1_16` - 16-row pairs (32px high panels)
-- `SCAN_1_32` - 32-row pairs (64px high panels)
-
-Must match panel hardware. Formula: `num_rows = height / scan_pattern_value`
-
-**Scan Wiring Options:**
-- `STANDARD_TWO_SCAN` - Most panels (default, no coordinate remapping)
-- `FOUR_SCAN_16PX_HIGH` - Four-scan 1/4 scan, 16-pixel high panels
-- `FOUR_SCAN_32PX_HIGH` - Four-scan 1/8 scan, 32-pixel high panels
-- `FOUR_SCAN_64PX_HIGH` - Four-scan 1/8 scan, 64-pixel high panels
-
-For panels with non-standard internal wiring that require coordinate remapping.
-
-**Shift Driver Options:**
-- `GENERIC` - Standard panels with no special initialization (default)
-- `FM6126A` - Very common in modern panels (also works for ICN2038S)
-- `ICN2038S` - Alias for FM6126A (same initialization sequence)
-- `FM6124` - FM6124 family panels
-- `MBI5124` - MBI5124 panels (requires `clk_phase_inverted = true`)
-- `DP3246` - DP3246 panels (special timing requirements)
-
-**Tip:** If panel shows incorrect colors or doesn't light up with `GENERIC`, try `FM6126A` first - it's the most common driver chip in modern panels.
-
-### Multi-Panel Physical Layout
-
+**Two panels side-by-side:**
 ```cpp
-// Multi-panel configuration (optional, defaults to single panel)
-config.layout_rows = 1;                                // Number of panels vertically
-config.layout_cols = 1;                                // Number of panels horizontally
-config.layout = PanelLayout::HORIZONTAL;               // Chaining pattern
+config.layout_cols = 2;  // Two panels horizontally
+config.layout = PanelLayout::HORIZONTAL;
+// Virtual display: 128×64
 ```
 
-**Layout Options:**
-- `HORIZONTAL` - Simple left-to-right chain (single row only)
-- `TOP_LEFT_DOWN` - Serpentine, start top-left corner
-- `TOP_RIGHT_DOWN` - Serpentine, start top-right corner
-- `BOTTOM_LEFT_UP` - Serpentine, start bottom-left corner
-- `BOTTOM_RIGHT_UP` - Serpentine, start bottom-right corner
-- `TOP_LEFT_DOWN_ZIGZAG` - Zigzag, start top-left (all panels upright)
-- `TOP_RIGHT_DOWN_ZIGZAG` - Zigzag, start top-right (all panels upright)
-- `BOTTOM_LEFT_UP_ZIGZAG` - Zigzag, start bottom-left (all panels upright)
-- `BOTTOM_RIGHT_UP_ZIGZAG` - Zigzag, start bottom-right (all panels upright)
-
-**Serpentine vs Zigzag:**
-- **Serpentine**: Alternate rows are physically mounted upside down (saves cable length)
-- **Zigzag**: All panels mounted upright, cables route back between rows (longer cables)
-
-**Row-Major Chaining:** Panels chain HORIZONTALLY across rows (not vertically down columns). This matches the ESP32-HUB75-MatrixPanel-DMA reference library.
-
-### Performance & Timing
-
+**Higher quality display:**
 ```cpp
-// Performance
-config.output_clock_speed = Hub75ClockSpeed::HZ_20M;   // Clock speed
-config.bit_depth = 8;                                   // BCM bit depth: 6-12
-config.min_refresh_rate = 60;                           // Minimum refresh rate in Hz
-
-// Timing
-config.latch_blanking = 1;                              // OE blanking cycles during LAT
-config.clk_phase_inverted = false;                      // Invert clock phase (MBI5124)
-
-// Features
-config.double_buffer = false;                           // Enable double buffering
-config.temporal_dither = false;                         // Enable temporal dithering (NYI)
-
-// Color
-config.gamma_mode = Hub75GammaMode::CIE1931;            // Gamma correction mode
-config.brightness = 128;                                // Initial brightness (0-255)
+config.bit_depth = 10;         // Better gradients
+config.double_buffer = true;   // Tear-free updates
+config.min_refresh_rate = 90;  // Smoother for cameras
 ```
 
-**Clock Speed Options:**
-- `HZ_8M` - 8 MHz (most compatible)
-- `HZ_10M` - 10 MHz
-- `HZ_16M` - 16 MHz
-- `HZ_20M` - 20 MHz (default, works with most panels)
-
-Higher speeds may cause signal integrity issues with long cables or poor-quality panels.
-
-**Bit Depth:**
-- 6-bit: Fast refresh, basic color depth
-- 8-bit: Good balance (default)
-- 10-bit: Better gradients, recommended for smooth animations
-- 12-bit: Best quality, slower refresh
-
-Higher bit depth = more descriptors + slower refresh rate.
-
-### Pin Configuration
-
-```cpp
-// GPIO pin assignments (example for ESP32-S3)
-config.pins.r1 = 25;   // Red data (top half)
-config.pins.g1 = 26;   // Green data (top half)
-config.pins.b1 = 27;   // Blue data (top half)
-config.pins.r2 = 14;   // Red data (bottom half)
-config.pins.g2 = 12;   // Green data (bottom half)
-config.pins.b2 = 13;   // Blue data (bottom half)
-config.pins.a = 23;    // Row address bit A
-config.pins.b = 19;    // Row address bit B
-config.pins.c = 5;     // Row address bit C
-config.pins.d = 17;    // Row address bit D
-config.pins.e = -1;    // Row address bit E (-1 if unused)
-config.pins.lat = 4;   // Latch
-config.pins.oe = 15;   // Output enable
-config.pins.clk = 16;  // Clock
-```
-
-**GPIO Restrictions:**
-- Avoid strapping pins (GPIO0, GPIO46, etc.)
-- ESP32-S3: GPIO19/20 unavailable if USB CDC enabled
-- Check ESP32 variant datasheets for input-only pins
-- Some platforms have restrictions on which peripherals can use which pins
-
-**Pre-configured Examples:** See repository [examples/common/pins_example.h](https://github.com/stuartparmenter/esp-hub75/blob/main/examples/common/pins_example.h) for tested pin configurations for different boards.
+**For complete configuration reference** (all scan patterns, layouts, clock speeds, bit depth options, pin configuration, etc.), see **[MENUCONFIG.md](../../docs/MENUCONFIG.md)**.
 
 ## Multi-Panel Layouts
 
-### Layout Examples
+Chain multiple panels for larger displays:
 
-**2×2 Serpentine Grid** (128×128, panels alternate upside down):
 ```cpp
 config.panel_width = 64;
 config.panel_height = 64;
-config.layout_rows = 2;
-config.layout_cols = 2;
-config.layout = PanelLayout::TOP_LEFT_DOWN;  // Serpentine
+config.layout_rows = 2;    // Two rows vertically
+config.layout_cols = 3;    // Three panels per row
+config.layout = PanelLayout::TOP_LEFT_DOWN;  // Serpentine wiring
+// Virtual display: 192×128 pixels
 ```
 
-**4×1 Horizontal Chain** (256×64, all panels upright):
-```cpp
-config.panel_width = 64;
-config.panel_height = 64;
-config.layout_rows = 1;
-config.layout_cols = 4;
-config.layout = PanelLayout::HORIZONTAL;
-```
+Panels chain **horizontally across rows** (row-major). Serpentine layouts have alternate rows mounted upside down to save cable length.
 
-**3×2 Zigzag Grid** (192×128, all panels upright):
-```cpp
-config.panel_width = 64;
-config.panel_height = 64;
-config.layout_rows = 2;
-config.layout_cols = 3;
-config.layout = PanelLayout::TOP_LEFT_DOWN_ZIGZAG;  // All upright
-```
+**For complete multi-panel guide** (layout patterns, wiring diagrams, coordinate remapping), see **[Multi-Panel Guide](../../docs/MULTI_PANEL.md)**.
 
-### Physical Wiring
+## Platform Support
 
-**Serpentine Example** (TOP_LEFT_DOWN):
-```
-Virtual Display:        Physical Chain:         Panel Orientation:
-┌────┬────┐             ┌───┬───┬───┬───┐      ┌────┬────┐
-│ 0  │ 1  │             │ 0 │ 1 │ 2 │ 3 │      │ 0→ │ ←1 │  (Panel 1 upside down)
-├────┼────┤             └───┴───┴───┴───┘      ├────┼────┤
-│ 2  │ 3  │                                     │ 2→ │ ←3 │  (Panel 3 upside down)
-└────┴────┘                                     └────┴────┘
-```
+Supports ESP32, ESP32-S2, ESP32-S3, and ESP32-P4 with platform-specific optimizations:
 
-Panel chain is always horizontal in DMA buffer: `[Panel 0][Panel 1][Panel 2][Panel 3]`
+- **ESP32/ESP32-S2** (I2S): ~57 KB SRAM, proven stability
+- **ESP32-S3** (GDMA): ~57 KB SRAM, faster clock (40 MHz), ghosting fix
+- **ESP32-P4** (PARLIO): ~284 KB PSRAM + ~16 KB SRAM, frees internal memory for apps
+- **ESP32-C6** (PARLIO): Planned, same as P4 but no clock gating
 
-**Coordinate Transformation Pipeline:**
-Virtual coordinates → Panel layout remap → Scan pattern remap → Physical DMA buffer
-
-## Platform-Specific Notes
-
-### ESP32-S3 (GDMA)
-
-- **Status:** ✅ Working
-- **Memory:** Internal SRAM allocation
-- **BCM Method:** Descriptor duplication (bit 7 has 32 descriptors → same buffer)
-- **Architecture:** Direct LCD_CAM register access, static circular descriptor chain
-- **Memory Usage:** ~57 KB single-buffer (64×64, 8-bit)
-
-### ESP32/ESP32-S2 (I2S)
-
-- **Status:** ⏳ Implemented, untested on hardware
-- **Memory:** Internal SRAM allocation
-- **BCM Method:** Descriptor duplication (same as GDMA)
-- **Architecture:** I2S peripheral in LCD mode, static circular descriptor chain
-- **Memory Usage:** Similar to GDMA
-
-### ESP32-P4 (PARLIO)
-
-- **Status:** ✅ Tested and working
-- **Memory:** PSRAM allocation via EDMA (frees internal SRAM for application use)
-- **BCM Method:** Buffer padding (not descriptor duplication)
-- **Clock Gating:** MSB (bit 15) controls PCLK on/off for display timing
-- **Architecture:** Transaction-based API, single buffer with loop transmission
-- **Memory Usage:** ~284 KB single-buffer (64×64, 8-bit) in PSRAM
-- **Cache Sync:** Automatic cache flushing for CPU writes to DMA-visible PSRAM
-
-**Why PSRAM?**
-- Frees scarce internal SRAM (~500 KB) for application code
-- Better scalability for large displays (128×128 = ~1 MB)
-- PSRAM typically 8-32 MB on ESP32-P4
-
-### ESP32-C6 (PARLIO)
-
-- **Status:** ⏳ Implemented, untested on hardware
-- **Memory:** Same as ESP32-P4 (PSRAM via EDMA)
-- **Difference:** No clock gating support (MSB unused, BCM via padding only)
-- **Architecture:** Same as ESP32-P4
-
-### Memory Comparison
-
-| Platform | 64×64 8-bit | 128×128 8-bit | Memory Pool | Notes |
-|----------|-------------|---------------|-------------|-------|
-| GDMA/I2S | ~57 KB      | ~228 KB       | Internal SRAM (~500 KB) | Faster access, descriptor chains |
-| PARLIO   | ~284 KB     | ~1.1 MB       | PSRAM (8-32 MB) | Frees SRAM, simpler code |
-
-PARLIO trades memory efficiency for code simplicity and application SRAM availability.
+**For detailed platform comparison, memory calculations, and implementation specifics**, see **[Platform Details](../../docs/PLATFORMS.md)**.
 
 ## Troubleshooting
 
-### Black Screen
+**Common quick fixes:**
+- **Black screen** → Try `shift_driver = ShiftDriver::FM6126A` (most modern panels)
+- **Wrong colors** → Check R1/G1/B1/R2/G2/B2 pin mapping
+- **Scrambled display** → Verify `scan_pattern` matches panel height (64px = SCAN_1_32)
 
-**Symptom:** Panel doesn't light up at all
+**For complete debugging guide** (ghosting, flickering, multi-panel issues, platform-specific problems, error messages), see **[Troubleshooting Guide](../../docs/TROUBLESHOOTING.md)**.
 
-**Solutions:**
-- Try `shift_driver = ShiftDriver::FM6126A` (most common in modern panels)
-- Verify pin mapping matches your board layout
-- Check power supply is adequate (64×64 panels can draw 3-4A at full brightness)
-- Verify data cable connections are secure
+## Advanced Documentation
 
-### Incorrect Colors or Garbled Display
+For deep technical details, see the comprehensive documentation in `docs/`:
 
-**Symptom:** Colors are wrong, swapped, or display shows random patterns
-
-**Solutions:**
-- **Wrong shift driver:** Try `FM6126A` (works for most modern panels including ICN2038S)
-- **Wrong scan wiring:** Try different `ScanPattern` values if `STANDARD_TWO_SCAN` doesn't work
-- **Pin mapping:** Verify R1/G1/B1/R2/G2/B2 are connected to correct GPIOs
-- **Scan pattern:** Ensure `scan_pattern` matches panel height (64px = SCAN_1_32)
-
-### Ghosting
-
-**Symptom:** Previous frame content faintly visible, or adjacent rows bleeding into each other
-
-**Solutions:**
-- Increase `latch_blanking` parameter (default is 1, try 2-4)
-- Lower `output_clock_speed` (signal integrity issue)
-- Check for poor-quality data cables
-
-### Flickering
-
-**Symptom:** Display flickers or has visible scanlines
-
-**Solutions:**
-- Refresh rate too low - driver will automatically adjust `lsbMsbTransitionBit`
-- Increase `min_refresh_rate` parameter
-- Reduce `bit_depth` if refresh rate is critically low
-
-### Scrambled/Weird Patterns
-
-**Symptom:** Display shows correct colors but scrambled geometry
-
-**Solutions:**
-- **Wrong scan_wiring:** Try `FOUR_SCAN_*` variants for non-standard panels
-- **Multi-panel layout:** Verify `layout` setting matches physical wiring
-- **Scan pattern:** Double-check `scan_pattern` matches panel specifications
-
-### MBI5124 Panels
-
-**Symptom:** MBI5124 panels don't work correctly
-
-**Solution:**
-- Must set `clk_phase_inverted = true` in configuration
-- Set `shift_driver = ShiftDriver::MBI5124`
-
-## Advanced Topics
-
-### BCM Timing
-
-The driver uses Binary Code Modulation (BCM) for color depth control. Instead of PWM (which would flicker), BCM varies how long each bit plane is displayed:
-
-- **Pure BCM:** Bit 0 shown 1×, bit 1 shown 2×, bit 2 shown 4×, ..., bit 7 shown 128×
-- **Optimized:** Lower bits (≤ lsbMsbTransitionBit) shown only 1×, upper bits get BCM weighting
-
-`lsbMsbTransitionBit` is auto-calculated to achieve target refresh rate. Higher values = faster refresh but slight color depth trade-off on lower bits (perceptually minor due to CIE correction).
-
-**Implementation differs by platform:**
-- **GDMA/I2S:** Multiple DMA descriptors pointing to same buffer (descriptor duplication)
-- **PARLIO:** Buffer padding with extended display periods (clock gating on ESP32-P4)
-
-### Double Buffering Best Practices
-
-```cpp
-// Enable double buffering in config
-config.double_buffer = true;
-Hub75Driver driver(config);
-driver.begin();
-
-// Rendering loop
-while (true) {
-    // Draw to back buffer
-    driver.clear();
-    draw_my_frame();
-
-    // Atomic swap
-    driver.flip_buffer();
-
-    // Front buffer displays while we draw next frame
-    vTaskDelay(pdMS_TO_TICKS(16));  // ~60 FPS
-}
-```
-
-**Benefits:**
-- Eliminates tearing artifacts during animation
-- Allows complex frame preparation without visible rendering
-
-**Costs:**
-- Doubles memory usage
-- Slightly more complex code
-
-### Scan Pattern Details
-
-The `Hub75ScanPattern` enum determines how many row pairs are addressed simultaneously:
-
-```
-SCAN_1_32 (64px high panel):
-- 32 row pairs (rows 0+32, 1+33, 2+34, ...)
-- Address lines A/B/C/D/E select which pair (0-31)
-
-SCAN_1_16 (32px high panel):
-- 16 row pairs (rows 0+16, 1+17, 2+18, ...)
-- Address lines A/B/C/D select which pair (0-15)
-```
-
-Non-standard panels may have shifted registers wired unusually, requiring `scan_wiring` remapping.
+- **[Architecture Overview](../../docs/ARCHITECTURE.md)** - BCM timing, DMA descriptor chains, static circular refresh
+- **[Platform Details](../../docs/PLATFORMS.md)** - GDMA vs I2S vs PARLIO implementation specifics, memory calculations, optimization strategies
+- **[Color & Gamma](../../docs/COLOR_GAMMA.md)** - CIE 1931 correction, bit depth trade-offs, dual-mode brightness system
+- **[Board Presets](../../docs/BOARDS.md)** - Pin mappings for supported boards, GPIO restrictions
+- **[Menuconfig Reference](../../docs/MENUCONFIG.md)** - Complete menuconfig option guide
+- **[Troubleshooting Guide](../../docs/TROUBLESHOOTING.md)** - Complete debugging reference
 
 ## License
 

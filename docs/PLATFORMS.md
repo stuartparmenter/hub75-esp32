@@ -104,14 +104,29 @@ Detailed comparison and implementation notes for ESP32 platform variants.
 
 ### Memory Layout
 
-Same as I2S (row buffers + LAT + latch blanking), but:
-- More rows (32 vs 16 for typical panels)
-- More descriptors due to 64-row support
+**Location**: Internal SRAM (DMA-capable)
 
-**Total Memory** (64×64 panel):
-- Row buffers: ~32 KB
-- Descriptors: ~25 KB
-- **Total: ~57 KB internal SRAM**
+**Components**:
+1. **Framebuffer**: `width × height × 4 bytes` (internal SRAM)
+   - Example (64×64): 16 KB (32 KB if double buffered)
+
+2. **Row Buffers**: Bit plane data for each row
+   - Structure: `[Pixel Data | LAT pulse | Latch blanking]`
+   - Formula: `num_rows × bit_depth × buffer_size`
+   - Example (64×64, 8-bit, 32 rows):
+     - Buffer size: ~(64 + 1 + 1) × 4 bytes = 264 bytes
+     - Total: 32 rows × 8 bits × 264 bytes = ~67 KB
+
+3. **DMA Descriptors**: Hardware instructions (12 bytes each)
+   - Formula: `num_rows × descriptors_per_row × 12`
+   - Descriptors per row (8-bit, lsbMsbTransitionBit=1): 1+1+2+3+5+9+17+33 = 71
+   - Example (32 rows): 32 × 71 × 12 = ~27 KB
+
+**Total Memory** (64×64 panel, 8-bit):
+- Framebuffer: 16 KB
+- Row buffers: ~67 KB
+- Descriptors: ~27 KB
+- **Total: ~110 KB internal SRAM**
 
 ### Initialization Sequence
 
@@ -370,33 +385,177 @@ Same as ESP32-P4 PARLIO **but NO clock gating support**.
 | ESP32-S3 | 57 KB | 0 | 57 KB |
 | ESP32-P4 | ~1 KB | 284 KB | 285 KB |
 
+**For troubleshooting platform-specific issues** (flickering, ghosting, black screen, etc.), see **[Troubleshooting Guide](TROUBLESHOOTING.md#platform-specific-issues)**.
+
 ---
 
-## Troubleshooting Platform-Specific Issues
+## Memory Optimization Strategies
 
-### ESP32/S2: Flickering at High Bit Depths
-- **Cause**: I2S DMA timing constraints
-- **Fix**: Reduce bit depth to 8-bit or lower clock to 10 MHz
+### Reduce Memory Usage
 
-### ESP32-S3: Ghosting on LSB
-- **Cause**: Fast row transitions without LAT settling
-- **Fix**: Already implemented (previous row addressing for LSB)
+**1. Reduce to 6-bit depth (from 8-bit default)**
+- Saves ~24-33 KB on 64×64 panel
+- Trade-off: Noticeable color banding, acceptable for some applications
 
-### ESP32-P4: Black screen
-- **Cause**: Cache not synchronized or unit not enabled before transmit
-- **Fix**: Ensure `parlio_tx_unit_enable()` before `transmit()`, verify cache sync
+**2. Disable double buffering**
+- Saves framebuffer memory (16 KB for 64×64)
+- Trade-off: May see tearing during updates
 
-### ESP32-P4: Colors incorrect
-- **Cause**: Clock gating not working or MSB bit inverted
-- **Fix**: Verify `SOC_PARLIO_TX_CLK_SUPPORT_GATING` defined for P4
+**3. Use smaller panels or fewer panels**
+- 32×32 instead of 64×64 saves ~75 KB
+- Single panel instead of multi-panel chain
+
+**4. Choose ESP32-P4 for large displays**
+- Uses PSRAM (~284 KB) instead of internal SRAM
+- Frees ~57 KB internal SRAM for application code
+- Trade-off: Slightly higher memory usage overall (~5×), cache sync overhead
+
+### Maximize Performance
+
+**1. Reduce bit depth if refresh rate critical**
+- 8-bit: typically 90-120 Hz (64×64 panel at 20MHz)
+- 10-bit: typically 75-100 Hz
+- 12-bit: typically 60-90 Hz
+- Actual rates vary by panel size, clock speed, and driver-calculated lsbMsbTransitionBit
+
+**2. Increase clock speed (if panel supports it)**
+- 20 MHz (default) works with most panels
+- Try 40 MHz if signal integrity allows
+- Test thoroughly with your specific hardware
+
+---
+
+## Configuration Impact on Memory
+
+### Bit Depth
+
+| Bit Depth | Bit Planes | Row Buffers (GDMA) | Descriptors | Total Memory (GDMA) |
+|-----------|------------|-------------------|-------------|---------------------|
+| 6-bit | 6 | ~50 KB | ~20 KB | ~86 KB |
+| 8-bit | 8 | ~67 KB | ~27 KB | ~110 KB |
+| 10-bit | 10 | ~84 KB | ~34 KB | ~134 KB |
+| 12-bit | 12 | ~101 KB | ~41 KB | ~158 KB |
+
+**Note**: PARLIO scales similarly but uses PSRAM (not SRAM).
+
+### Panel Size
+
+| Panel Size | Framebuffer | Row Buffers (GDMA, 8-bit) | Descriptors | Total (GDMA) |
+|------------|-------------|--------------------------|-------------|--------------|
+| 32×32 | 4 KB | ~17 KB | ~14 KB | ~35 KB |
+| 64×32 | 8 KB | ~34 KB | ~14 KB | ~56 KB |
+| 64×64 | 16 KB | ~67 KB | ~27 KB | ~110 KB |
+| 128×64 | 32 KB | ~134 KB | ~27 KB | ~193 KB |
+| 128×128 | 64 KB | ~268 KB | ~54 KB | ~386 KB |
+
+**Warning**: 128×128 on GDMA/I2S may exhaust internal SRAM (~500 KB total).
+**Solution**: Use ESP32-P4 with PARLIO (PSRAM).
+
+### Double Buffering
+
+**Impact**: Doubles framebuffer memory
+
+**Example** (64×64):
+- Single buffer: 16 KB
+- Double buffer: 32 KB (+16 KB)
+
+**Worth it?**:
+- ✅ For animations with frequent full-screen updates
+- ❌ For static displays or sparse updates
+
+---
+
+## Example Memory Calculations
+
+### Small Display: 32×32 Panel, ESP32-S3, 8-bit
+
+```
+Framebuffer: 32 × 32 × 4 = 4 KB
+Row Buffers: 16 rows × 8 bits × ~132 bytes = ~17 KB
+Descriptors: 16 rows × 71 × 12 bytes = ~14 KB
+
+Total: ~35 KB internal SRAM
+```
+
+**Verdict**: Very memory-efficient, plenty of room for application.
+
+### Medium Display: 64×64 Panel, ESP32-S3, 10-bit, Double Buffer
+
+```
+Framebuffer: 64 × 64 × 4 × 2 = 32 KB (double buffer)
+Row Buffers: 32 rows × 10 bits × ~264 bytes = ~84 KB
+Descriptors: 32 rows × ~88 × 12 bytes = ~34 KB
+
+Total: ~150 KB internal SRAM
+```
+
+**Verdict**: Acceptable, ~350 KB remaining for application.
+
+### Large Display: 128×128 Panel, ESP32-P4, 8-bit (PARLIO)
+
+```
+Internal SRAM:
+  Framebuffer: 128 × 128 × 4 = 64 KB
+  Metadata: ~1 KB
+  Subtotal: ~65 KB
+
+PSRAM:
+  PARLIO Buffers: ~1.1 MB
+
+Total Internal SRAM: ~65 KB
+Total PSRAM: ~1.1 MB
+```
+
+**Verdict**: Excellent! ~435 KB internal SRAM remaining for application, abundant PSRAM.
+
+---
+
+## Memory Profiling
+
+### ESP-IDF Tools
+
+Check available memory at runtime:
+
+```cpp
+#include "esp_heap_caps.h"
+
+ESP_LOGI(TAG, "Free heap: %d bytes", esp_get_free_heap_size());
+ESP_LOGI(TAG, "Free DMA memory: %d bytes",
+         heap_caps_get_free_size(MALLOC_CAP_DMA));
+ESP_LOGI(TAG, "Free PSRAM: %d bytes",
+         heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+```
+
+### Build Output
+
+Check memory usage after build:
+
+```bash
+idf.py build | grep "Used static"
+```
+
+Output shows IRAM, DRAM, Flash usage.
+
+---
+
+## Memory Summary
+
+**Key Takeaways**:
+1. **GDMA/I2S**: ~110 KB internal SRAM for 64×64, 8-bit
+2. **PARLIO**: ~65 KB internal SRAM + ~284 KB PSRAM for 64×64, 8-bit
+3. **Scalability**: PARLIO better for large displays (128×128+)
+4. **Optimization**: Reduce bit depth, disable double buffer, use smaller panels
+5. **Profiling**: Use `heap_caps_get_free_size()` to monitor usage
+
+Choose platform and configuration based on your display size and application memory needs!
 
 ---
 
 ## Related Documentation
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Core BCM and DMA concepts
-- **[MEMORY_USAGE.md](MEMORY_USAGE.md)** - Detailed memory calculations
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Platform-specific debugging
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Complete debugging guide
+- **[COLOR_GAMMA.md](COLOR_GAMMA.md)** - Color correction and bit depth
 
 ---
 

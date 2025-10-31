@@ -108,6 +108,22 @@ Applications draw in virtual coordinates (0,0) to (width-1, height-1):
 - ✅ Cleaner physical installation
 - ⚠️ Must physically rotate alternate rows
 
+### Serpentine vs Zigzag Comparison
+
+| Factor | Serpentine | Zigzag |
+|--------|-----------|--------|
+| **Cable length** | ✅ Shorter (~50% savings) | ⚠️ Longer cables needed |
+| **Physical install** | ⚠️ Must rotate alternate rows 180° | ✅ All panels same orientation |
+| **Troubleshooting** | ⚠️ Harder (mixed orientations) | ✅ Easier (uniform) |
+| **Visual confirmation** | ⚠️ Text on alternate panels upside down | ✅ All labels readable |
+| **Best for** | Permanent installations, wall mounts | Prototyping, testing, temporary setups |
+
+**Choose Serpentine when:** Cable management and clean install matter more than convenience
+
+**Choose Zigzag when:** Ease of assembly/troubleshooting matters more than cable length
+
+---
+
 #### TOP_LEFT_DOWN (Serpentine)
 
 **Start**: Top-left corner
@@ -363,65 +379,7 @@ Driver validates configuration:
 - Serpentine → Requires `layout_rows > 1`
 - Zigzag → Requires `layout_rows > 1 AND layout_cols > 1`
 
----
-
-## Troubleshooting
-
-### All Panels Show Same Content
-
-**Cause**: `layout_cols = 1` (single panel mode)
-**Fix**: Set `layout_cols` to actual number of horizontal panels
-
-### Second/Third Panel is Black
-
-**Causes**:
-- Ribbon cable not connected (Panel N OUT → Panel N+1 IN)
-- Power not connected to Panel N+1
-- Cable too long or damaged
-
-**Debug**:
-1. Verify physical cable connections
-2. Check 5V power to ALL panels
-3. Try shorter/higher quality ribbon cables
-
-### Scrambled Display Across Panels
-
-**Causes**:
-- Wrong layout type (e.g., HORIZONTAL when serpentine wiring)
-- Wrong scan_wiring pattern
-
-**Fix**:
-1. Verify layout type matches physical wiring
-2. Check panel orientation (serpentine = alternate rows upside down)
-3. Try different scan_wiring patterns if needed
-
-### Colors Correct on Panel 0, Wrong on Others
-
-**Causes**:
-- Mixed panel types (different shift drivers)
-- One panel needs FM6126A init, others don't
-
-**Fix**:
-- Use panels of same model/manufacturer
-- Try FM6126A shift driver (works for most modern panels)
-
-### Panels in Wrong Order
-
-**Cause**: Mismatched physical wiring and layout configuration
-**Fix**: Either:
-1. Rewire panels to match layout, OR
-2. Change layout type to match wiring
-
-### Panel N Shows Content from Wrong Position
-
-**Causes**:
-- Wrong layout_rows or layout_cols
-- Wrong layout type
-
-**Debug**:
-1. Count physical panels horizontally → `layout_cols`
-2. Count physical panel rows vertically → `layout_rows`
-3. Check if alternate rows are upside down → serpentine, else HORIZONTAL/zigzag
+**For troubleshooting multi-panel issues** (panels showing same content, black panels, scrambled display, wrong order, etc.), see **[Troubleshooting Guide](TROUBLESHOOTING.md#multi-panel-issues)**.
 
 ---
 

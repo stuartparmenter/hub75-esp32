@@ -302,6 +302,39 @@ HUB75_MIN_REFRESH_RATE = 90
 
 ---
 
+## Custom Pin Configuration
+
+If your board is not listed in the presets, you can configure pins manually:
+
+1. **Set target** (if not already done):
+   ```bash
+   idf.py set-target esp32s3  # or esp32, esp32s2, esp32p4
+   ```
+
+2. **Select Custom preset**:
+   ```bash
+   idf.py menuconfig
+   ```
+   Navigate to: `HUB75 Display Configuration → Board Preset → Custom`
+
+3. **Configure pins**:
+   Navigate to: `HUB75 Display Configuration → Pin Configuration`
+
+   Set all 13 pins:
+   - Data pins (upper): R1, G1, B1
+   - Data pins (lower): R2, G2, B2
+   - Address lines: A, B, C, D, E (-1 if unused)
+   - Control signals: LAT, OE, CLK
+
+4. **Build and test**:
+   ```bash
+   idf.py build flash monitor
+   ```
+
+**Pin Restrictions**: See [BOARDS.md](BOARDS.md) for GPIO restrictions by platform (strapping pins, flash/PSRAM conflicts, etc.)
+
+---
+
 ## Troubleshooting Menuconfig
 
 ### Changes Not Taking Effect

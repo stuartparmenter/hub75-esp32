@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Stuart Parmenter
 // SPDX-License-Identifier: MIT
 //
-// @file i2s_dma.hpp
+// @file i2s_dma.h
 // @brief ESP32/ESP32-S2 I2S DMA engine (LCD mode)
 //
 // Self-contained I2S+DMA implementation with BCM, pixel operations,

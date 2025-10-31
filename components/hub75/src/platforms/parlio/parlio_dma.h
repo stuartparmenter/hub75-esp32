@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Stuart Parmenter
 // SPDX-License-Identifier: MIT
 //
-// @file parlio_dma.hpp
+// @file parlio_dma.h
 // @brief PARLIO peripheral implementation for HUB75 (ESP32-P4/C6)
 //
 // Uses PARLIO TX peripheral with optional clock gating (P4 only) to

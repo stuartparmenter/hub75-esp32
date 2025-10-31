@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Stuart Parmenter
 // SPDX-License-Identifier: MIT
 
-// @file scan_patterns.hpp
+// @file scan_patterns.h
 // @brief Scan pattern coordinate remapping
 
 // Based on https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA

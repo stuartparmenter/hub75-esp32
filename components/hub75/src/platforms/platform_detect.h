@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Stuart Parmenter
 // SPDX-License-Identifier: MIT
 //
-// @file platform_detect.hpp
+// @file platform_detect.h
 // @brief Platform detection and DMA engine selection
 
 #pragma once

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Stuart Parmenter
 // SPDX-License-Identifier: MIT
 //
-// @file driver_init.hpp
+// @file driver_init.h
 // @brief Shift driver chip initialization
 
 #pragma once

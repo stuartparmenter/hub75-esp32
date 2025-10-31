@@ -42,7 +42,7 @@ using PlatformDMAImpl = ParlioDma;
 // Constructor / Destructor
 // ============================================================================
 
-Hub75Driver::Hub75Driver(const Hub75Config &config) : config_(config), running_(false), lut_(nullptr), dma_(nullptr) {
+Hub75Driver::Hub75Driver(const Hub75Config &config) : config_(config), running_(false), dma_(nullptr) {
   ESP_LOGI(TAG, "Driver created for %s (%s)", getPlatformName(), getDMAEngineName());
   ESP_LOGI(TAG, "Panel: %dx%d, Layout: %dx%d, Virtual: %dx%d", (unsigned int) config_.panel_width,
            (unsigned int) config_.panel_height, (unsigned int) config_.layout_cols, (unsigned int) config_.layout_rows,
@@ -80,9 +80,6 @@ bool Hub75Driver::begin() {
     return false;
   }
 
-  // Initialize color LUT
-  initialize_lut_();
-
   // Initialize shift driver chips (panel-level, platform-agnostic)
   // Must happen before DMA starts transmitting data
   esp_err_t err = DriverInit::initialize(config_);
@@ -97,9 +94,6 @@ bool Hub75Driver::begin() {
     ESP_LOGE(TAG, "Failed to initialize DMA engine");
     return false;
   }
-
-  // Pass LUT for gamma correction during pixel writes
-  dma_->set_lut(lut_);
 
   // Start DMA transfer
   dma_->start_transfer();
@@ -191,13 +185,6 @@ void Hub75Driver::set_intensity(float intensity) {
   }
 }
 
-void Hub75Driver::set_gamma_mode(Hub75GammaMode mode) {
-  config_.gamma_mode = mode;
-  initialize_lut_();  // Regenerate LUT
-}
-
-Hub75GammaMode Hub75Driver::get_gamma_mode() const { return config_.gamma_mode; }
-
 // ============================================================================
 // Information
 // ============================================================================
@@ -213,16 +200,3 @@ uint16_t Hub75Driver::get_height() const {
 }
 
 bool Hub75Driver::is_running() const { return running_; }
-
-// ============================================================================
-// Private Helper Methods
-// ============================================================================
-
-void Hub75Driver::initialize_lut_() {
-  lut_ = get_lut(config_.gamma_mode, config_.bit_depth);
-  ESP_LOGI(TAG, "Initialized %s LUT for %d-bit depth",
-           config_.gamma_mode == Hub75GammaMode::CIE1931     ? "CIE1931"
-           : config_.gamma_mode == Hub75GammaMode::GAMMA_2_2 ? "Gamma2.2"
-                                                             : "Linear",
-           config_.bit_depth);
-}

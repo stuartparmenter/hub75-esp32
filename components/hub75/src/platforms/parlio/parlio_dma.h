@@ -44,7 +44,6 @@ class ParlioDma : public PlatformDma {
 
   void draw_pixels(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buffer, Hub75PixelFormat format,
                    Hub75ColorOrder color_order, bool big_endian) override;
-  void set_lut(const uint16_t *lut) override;
   void clear() override;
   void flip_buffer() override;
 
@@ -70,7 +69,6 @@ class ParlioDma : public PlatformDma {
 
   inline void set_clock_enable(uint16_t &word, bool enable) { word = enable ? (word | 0x8000) : (word & 0x7FFF); }
 
-  const Hub75Config config_;
   parlio_tx_unit_handle_t tx_unit_;
   parlio_transmit_config_t transmit_config_;
   const uint8_t bit_depth_;
@@ -107,7 +105,6 @@ class ParlioDma : public PlatformDma {
   size_t total_buffer_bytes_;  // Cached total buffer size per buffer (computed once, never changes)
   uint8_t basis_brightness_;
   float intensity_;
-  const uint16_t *lut_;
   bool transfer_started_;
 };
 

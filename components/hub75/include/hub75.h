@@ -149,18 +149,6 @@ class Hub75Driver {
    */
   void set_intensity(float intensity);
 
-  /**
-   * @brief Set gamma correction mode
-   * @param mode Gamma mode
-   */
-  void set_gamma_mode(Hub75GammaMode mode);
-
-  /**
-   * @brief Get current gamma mode
-   * @return Current gamma mode
-   */
-  Hub75GammaMode get_gamma_mode() const;
-
   // ========================================================================
   // Information
   // ========================================================================
@@ -187,14 +175,8 @@ class Hub75Driver {
   Hub75Config config_;
   bool running_;
 
-  // Color conversion LUTs
-  const uint16_t *lut_;
-
   // Platform-specific DMA engine
   hub75::PlatformDma *dma_;
-
-  // Helper methods
-  void initialize_lut_();
 
   HUB75_IRAM inline size_t get_pixel_offset_(uint16_t x, uint16_t y) const {
     // Total width includes all panels in layout

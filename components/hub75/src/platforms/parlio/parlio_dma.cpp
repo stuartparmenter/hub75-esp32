@@ -162,7 +162,7 @@ static void validate_brightness_oe_calculations(int bit_depth, int lsb_msb_trans
 #endif  // DEBUG_BRIGHTNESS_OE_VALIDATION
 
 ParlioDma::ParlioDma(const Hub75Config &config)
-    : config_(config),
+    : PlatformDma(config),
       tx_unit_(nullptr),
       bit_depth_(config.bit_depth),
       lsbMsbTransitionBit_(0),
@@ -185,7 +185,6 @@ ParlioDma::ParlioDma(const Hub75Config &config)
       is_double_buffered_(false),
       basis_brightness_(config.brightness),
       intensity_(1.0f),
-      lut_(nullptr),
       transfer_started_(false) {
   // Initialize transmit config
   transmit_config_.idle_value = 0x00;
@@ -859,8 +858,6 @@ void ParlioDma::set_intensity(float intensity) {
   }
 }
 
-void ParlioDma::set_lut(const uint16_t *lut) { lut_ = lut; }
-
 HUB75_IRAM void ParlioDma::draw_pixels(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buffer,
                                        Hub75PixelFormat format, Hub75ColorOrder color_order, bool big_endian) {
   // Always write to active buffer (CPU drawing buffer)
@@ -890,88 +887,18 @@ HUB75_IRAM void ParlioDma::draw_pixels(uint16_t x, uint16_t y, uint16_t w, uint1
       uint16_t py = y + dy;
       const size_t pixel_idx = (dy * w) + dx;
 
-      // Coordinate transformation pipeline
-      Coords c = {.x = px, .y = py};
-
-      // Step 1: Panel layout remapping (if multi-panel grid)
-      if (needs_layout_remap_) {
-        c = PanelLayoutRemap::remap(c, layout_, panel_width_, panel_height_, layout_rows_, layout_cols_);
-      }
-
-      // Step 2: Scan pattern remapping (if non-standard panel)
-      if (needs_scan_remap_) {
-        c = ScanPatternRemap::remap(c, scan_wiring_, panel_width_);
-      }
-
-      px = c.x;
-      py = c.y;
-
-      // Debug assertions - automatically disabled in release builds
-      assert(px < dma_width_ && "Transformed X exceeds DMA buffer width!");
-      assert(py < panel_height_ && "Transformed Y exceeds row buffer height!");
-
-      // Calculate row and half
-      const uint16_t row = py % num_rows_;
-      const bool is_lower = (py >= num_rows_);
+      // Coordinate transformation pipeline (layout + scan remapping)
+      auto transformed =
+          transform_coordinate(px, py, needs_layout_remap_, needs_scan_remap_, layout_, scan_wiring_, panel_width_,
+                               panel_height_, layout_rows_, layout_cols_, dma_width_, num_rows_);
+      px = transformed.x;
+      const uint16_t row = transformed.row;
+      const bool is_lower = transformed.is_lower;
 
       uint8_t r8 = 0, g8 = 0, b8 = 0;
 
-      // Extract RGB based on format (same as GDMA)
-      switch (format) {
-        case Hub75PixelFormat::RGB888: {
-          const uint8_t *p = buffer + (pixel_idx * 3);
-          r8 = p[0];
-          g8 = p[1];
-          b8 = p[2];
-          break;
-        }
-
-        case Hub75PixelFormat::RGB888_32: {
-          const uint8_t *p = buffer + (pixel_idx * 4);
-          if (color_order == Hub75ColorOrder::RGB) {
-            if (big_endian) {
-              r8 = p[1];
-              g8 = p[2];
-              b8 = p[3];
-            } else {
-              r8 = p[2];
-              g8 = p[1];
-              b8 = p[0];
-            }
-          } else {  // BGR
-            if (big_endian) {
-              r8 = p[3];
-              g8 = p[2];
-              b8 = p[1];
-            } else {
-              r8 = p[0];
-              g8 = p[1];
-              b8 = p[2];
-            }
-          }
-          break;
-        }
-
-        case Hub75PixelFormat::RGB565: {
-          const uint8_t *p = buffer + (pixel_idx * 2);
-          uint16_t rgb565;
-          if (big_endian) {
-            rgb565 = (uint16_t(p[0]) << 8) | p[1];
-          } else {
-            rgb565 = (uint16_t(p[1]) << 8) | p[0];
-          }
-
-          const uint8_t r5 = (rgb565 >> 11) & 0x1F;
-          const uint8_t g6 = (rgb565 >> 5) & 0x3F;
-          const uint8_t b5 = rgb565 & 0x1F;
-
-          // Scale to 8-bit using color conversion helpers
-          r8 = scale_5bit_to_8bit(r5);
-          g8 = scale_6bit_to_8bit(g6);
-          b8 = scale_5bit_to_8bit(b5);
-          break;
-        }
-      }
+      // Extract RGB888 from pixel format
+      extract_rgb888_from_format(buffer, pixel_idx, format, color_order, big_endian, r8, g8, b8);
 
       // Apply LUT correction
       const uint16_t r_corrected = lut_[r8];

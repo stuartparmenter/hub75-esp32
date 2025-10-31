@@ -70,7 +70,7 @@ constexpr uint16_t OE_CLEAR_MASK = ~(1 << OE_BIT);
 // ============================================================================
 
 I2sDma::I2sDma(const Hub75Config &config)
-    : config_(config),
+    : PlatformDma(config),
       i2s_dev_(nullptr),
       bit_depth_(config.bit_depth),
       lsbMsbTransitionBit_(0),
@@ -93,8 +93,7 @@ I2sDma::I2sDma(const Hub75Config &config)
       active_idx_(0),
       descriptor_count_(0),
       basis_brightness_(config.brightness),
-      intensity_(1.0f),
-      lut_(nullptr) {
+      intensity_(1.0f) {
   // Zero-copy architecture: DMA buffers ARE the display memory
   // Note: panel_width_, etc. will be set in init()
 }
@@ -856,8 +855,6 @@ bool I2sDma::build_descriptor_chain() {
 // Pixel API
 // ============================================================================
 
-void I2sDma::set_lut(const uint16_t *lut) { lut_ = lut; }
-
 HUB75_IRAM void I2sDma::draw_pixels(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buffer,
                                     Hub75PixelFormat format, Hub75ColorOrder color_order, bool big_endian) {
   // Always write to active buffer (CPU drawing buffer)
@@ -886,100 +883,19 @@ HUB75_IRAM void I2sDma::draw_pixels(uint16_t x, uint16_t y, uint16_t w, uint16_t
       uint16_t px = x + dx;
       uint16_t py = y + dy;
 
-      // ============================================================
-      // COORDINATE TRANSFORMATION PIPELINE
-      // ============================================================
-
-      Coords c = {.x = px, .y = py};
-
-      // Step 1: Panel layout remapping (if multi-panel grid)
-      if (needs_layout_remap_) {
-        c = PanelLayoutRemap::remap(c, layout_, panel_width_, panel_height_, layout_rows_, layout_cols_);
-      }
-
-      // Step 2: Scan pattern remapping (if non-standard panel)
-      if (needs_scan_remap_) {
-        c = ScanPatternRemap::remap(c, scan_wiring_, panel_width_);
-      }
-
-      // Use transformed coordinates for DMA buffer writes
-      px = c.x;
-      py = c.y;
-
-      // Debug assertions - automatically disabled in release builds
-      assert(px < dma_width_ && "Transformed X exceeds DMA buffer width!");
-      assert(py < panel_height_ && "Transformed Y exceeds row buffer height!");
-
-      const uint16_t row = py % (panel_height_ / 2);
-      const bool is_lower = (py >= panel_height_ / 2);
+      // Coordinate transformation pipeline (layout + scan remapping)
+      auto transformed =
+          transform_coordinate(px, py, needs_layout_remap_, needs_scan_remap_, layout_, scan_wiring_, panel_width_,
+                               panel_height_, layout_rows_, layout_cols_, dma_width_, num_rows_);
+      px = transformed.x;
+      const uint16_t row = transformed.row;
+      const bool is_lower = transformed.is_lower;
 
       const size_t pixel_idx = (dy * w) + dx;
       uint8_t r8 = 0, g8 = 0, b8 = 0;
 
-      // Extract RGB based on format
-      switch (format) {
-        case Hub75PixelFormat::RGB888: {
-          // 24-bit packed RGB
-          const uint8_t *p = buffer + (pixel_idx * 3);
-          r8 = p[0];
-          g8 = p[1];
-          b8 = p[2];
-          break;
-        }
-
-        case Hub75PixelFormat::RGB888_32: {
-          // 32-bit RGB with padding
-          const uint8_t *p = buffer + (pixel_idx * 4);
-          if (color_order == Hub75ColorOrder::RGB) {
-            if (big_endian) {
-              // Big-endian xRGB: [x][R][G][B]
-              r8 = p[1];
-              g8 = p[2];
-              b8 = p[3];
-            } else {
-              // Little-endian xRGB stored as BGRx: [B][G][R][x]
-              r8 = p[2];
-              g8 = p[1];
-              b8 = p[0];
-            }
-          } else {  // BGR
-            if (big_endian) {
-              // Big-endian xBGR: [x][B][G][R]
-              r8 = p[3];
-              g8 = p[2];
-              b8 = p[1];
-            } else {
-              // Little-endian xBGR stored as RGBx: [R][G][B][x]
-              r8 = p[0];
-              g8 = p[1];
-              b8 = p[2];
-            }
-          }
-          break;
-        }
-
-        case Hub75PixelFormat::RGB565: {
-          // 16-bit RGB565
-          const uint8_t *p = buffer + (pixel_idx * 2);
-          uint16_t rgb565;
-          if (big_endian) {
-            rgb565 = (uint16_t(p[0]) << 8) | p[1];
-          } else {
-            rgb565 = (uint16_t(p[1]) << 8) | p[0];
-          }
-
-          // Extract RGB565 components
-          const uint8_t r5 = (rgb565 >> 11) & 0x1F;
-          const uint8_t g6 = (rgb565 >> 5) & 0x3F;
-          const uint8_t b5 = rgb565 & 0x1F;
-
-          // Scale to 8-bit using color conversion helpers
-          r8 = scale_5bit_to_8bit(r5);
-          g8 = scale_6bit_to_8bit(g6);
-          b8 = scale_5bit_to_8bit(b5);
-          break;
-        }
-      }
+      // Extract RGB888 from pixel format
+      extract_rgb888_from_format(buffer, pixel_idx, format, color_order, big_endian, r8, g8, b8);
 
       // Apply LUT correction
       const uint16_t r_corrected = lut_[r8];

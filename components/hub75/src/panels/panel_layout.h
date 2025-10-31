@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Stuart Parmenter
 // SPDX-License-Identifier: MIT
 
-// @file panel_layout.hpp
+// @file panel_layout.h
 // @brief Multi-panel layout coordinate remapping
 
 // Based on https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA

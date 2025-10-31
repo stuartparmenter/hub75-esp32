@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Stuart Parmenter
 // SPDX-License-Identifier: MIT
 //
-// @file color_convert.hpp
+// @file color_convert.h
 // @brief RGB565 scaling utilities for color conversion
 //
 // Provides functions to scale RGB565 color components (5-bit and 6-bit)

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Stuart Parmenter
 // SPDX-License-Identifier: MIT
 //
-// @file color_lut.hpp
+// @file color_lut.h
 // @brief Color lookup tables for gamma correction
 
 #pragma once

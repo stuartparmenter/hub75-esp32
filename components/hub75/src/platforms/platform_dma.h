@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Stuart Parmenter
 // SPDX-License-Identifier: MIT
 //
-// @file platform_dma.hpp
+// @file platform_dma.h
 // @brief Platform-agnostic DMA interface
 //
 // This header provides a common interface that all platform-specific

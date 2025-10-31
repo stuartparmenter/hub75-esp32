@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Stuart Parmenter
 // SPDX-License-Identifier: MIT
 //
-// @file gdma_dma.hpp
+// @file gdma_dma.h
 // @brief ESP32-S3 LCD_CAM peripheral + GDMA for HUB75
 //
 // Uses ESP32-S3's LCD_CAM peripheral with direct register access

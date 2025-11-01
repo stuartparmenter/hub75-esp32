@@ -205,29 +205,56 @@ menu "HUB75 RGB LED Matrix Driver"
                 bool "DP3246"
         endchoice
 
-        choice HUB75_BIT_DEPTH
+        choice
             prompt "Bit Depth"
-            default HUB75_BIT_DEPTH_8
+            default DEPTH_8
             help
                 Color bit depth per channel (R/G/B).
 
                 Higher bit depth = better color gradients but slower refresh rate.
+                Changes require full rebuild to regenerate LUT.
 
-                  - 8-bit: 256 levels/channel, 16.7M colors (good balance)
-                  - 10-bit: 1024 levels/channel, 1.07B colors (better gradients)
-                  - 12-bit: 4096 levels/channel, 68.7B colors (best quality)
+                  - 6-bit: 64 levels/channel (fastest refresh)
+                  - 7-bit: 128 levels/channel
+                  - 8-bit: 256 levels/channel (good balance)
+                  - 9-bit: 512 levels/channel
+                  - 10-bit: 1024 levels/channel (recommended)
+                  - 11-bit: 2048 levels/channel
+                  - 12-bit: 4096 levels/channel (best quality)
 
                 Driver auto-adjusts BCM timing to maintain target refresh rate.
 
-            config HUB75_BIT_DEPTH_8
+            config DEPTH_6
+                bool "6-bit (Fastest)"
+
+            config DEPTH_7
+                bool "7-bit"
+
+            config DEPTH_8
                 bool "8-bit (Good Balance)"
 
-            config HUB75_BIT_DEPTH_10
-                bool "10-bit (Better Gradients)"
+            config DEPTH_9
+                bool "9-bit"
 
-            config HUB75_BIT_DEPTH_12
+            config DEPTH_10
+                bool "10-bit (Recommended)"
+
+            config DEPTH_11
+                bool "11-bit"
+
+            config DEPTH_12
                 bool "12-bit (Best Quality)"
         endchoice
+
+        config HUB75_BIT_DEPTH
+            int
+            default 6 if DEPTH_6
+            default 7 if DEPTH_7
+            default 8 if DEPTH_8
+            default 9 if DEPTH_9
+            default 10 if DEPTH_10
+            default 11 if DEPTH_11
+            default 12 if DEPTH_12
 
         choice HUB75_CLOCK_SPEED
             prompt "Output Clock Speed"
@@ -614,29 +641,36 @@ menu "HUB75 RGB LED Matrix Driver"
 
     menu "Color"
 
-        choice HUB75_GAMMA_MODE
+        choice
             prompt "Gamma Correction Mode"
-            default HUB75_GAMMA_CIE1931
+            default GAMMA_CIE1931
             help
                 Gamma correction mode for color output.
+                Changes require full rebuild to regenerate LUT.
 
-                - CIE1931: Standard perceptual lightness curve (recommended)
                 - Linear: No gamma correction (1:1 mapping)
-                - None: Alias for Linear
+                - CIE1931: Standard perceptual lightness curve (recommended)
+                - Gamma 2.2: Standard gamma 2.2 correction
 
                 CIE1931 provides better visual color gradients by matching
-                human perception of brightness. Linear/None provides direct
+                human perception of brightness. Linear provides direct
                 hardware mapping but may appear less smooth.
 
-            config HUB75_GAMMA_CIE1931
-                bool "CIE1931 (Perceptual)"
-
-            config HUB75_GAMMA_LINEAR
+            config GAMMA_LINEAR
                 bool "Linear (No Correction)"
 
-            config HUB75_GAMMA_NONE
-                bool "None (Same as Linear)"
+            config GAMMA_CIE1931
+                bool "CIE1931 (Perceptual)"
+
+            config GAMMA_2_2
+                bool "Gamma 2.2"
         endchoice
+
+        config HUB75_GAMMA_MODE
+            int
+            default 0 if GAMMA_LINEAR
+            default 1 if GAMMA_CIE1931
+            default 2 if GAMMA_2_2
 
     endmenu
 

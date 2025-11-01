@@ -170,173 +170,62 @@ template<uint8_t BitDepth> static constexpr std::array<uint16_t, 256> generate_l
 }
 
 // ============================================================================
-// Compile-Time Generated Lookup Tables (All Bit Depths 6-12)
+// Compile-Time LUT Selection (Single LUT based on HUB75_GAMMA_MODE/HUB75_BIT_DEPTH)
 // ============================================================================
 
-// CIE 1931 tables for all bit depths (6-12)
-constexpr auto LUM_CONV_TAB_6BIT = generate_cie1931_lut<6>();
-constexpr auto LUM_CONV_TAB_7BIT = generate_cie1931_lut<7>();
-constexpr auto LUM_CONV_TAB_8BIT = generate_cie1931_lut<8>();
-constexpr auto LUM_CONV_TAB_9BIT = generate_cie1931_lut<9>();
-constexpr auto LUM_CONV_TAB_10BIT = generate_cie1931_lut<10>();
-constexpr auto LUM_CONV_TAB_11BIT = generate_cie1931_lut<11>();
-constexpr auto LUM_CONV_TAB_12BIT = generate_cie1931_lut<12>();
-
-// Gamma 2.2 tables
-constexpr auto GAMMA22_LUT_6BIT = generate_gamma22_lut<6>();
-constexpr auto GAMMA22_LUT_7BIT = generate_gamma22_lut<7>();
-constexpr auto GAMMA22_LUT_8BIT = generate_gamma22_lut<8>();
-constexpr auto GAMMA22_LUT_9BIT = generate_gamma22_lut<9>();
-constexpr auto GAMMA22_LUT_10BIT = generate_gamma22_lut<10>();
-constexpr auto GAMMA22_LUT_11BIT = generate_gamma22_lut<11>();
-constexpr auto GAMMA22_LUT_12BIT = generate_gamma22_lut<12>();
-
-// Linear tables
-constexpr auto LINEAR_LUT_6BIT = generate_linear_lut<6>();
-constexpr auto LINEAR_LUT_7BIT = generate_linear_lut<7>();
-constexpr auto LINEAR_LUT_8BIT = generate_linear_lut<8>();
-constexpr auto LINEAR_LUT_9BIT = generate_linear_lut<9>();
-constexpr auto LINEAR_LUT_10BIT = generate_linear_lut<10>();
-constexpr auto LINEAR_LUT_11BIT = generate_linear_lut<11>();
-constexpr auto LINEAR_LUT_12BIT = generate_linear_lut<12>();
+#if HUB75_GAMMA_MODE == 0  // LINEAR/NONE
+constexpr auto LUT = generate_linear_lut<HUB75_BIT_DEPTH>();
+#elif HUB75_GAMMA_MODE == 1  // CIE1931
+constexpr auto LUT = generate_cie1931_lut<HUB75_BIT_DEPTH>();
+#elif HUB75_GAMMA_MODE == 2  // GAMMA_2_2
+constexpr auto LUT = generate_gamma22_lut<HUB75_BIT_DEPTH>();
+#else
+#error "Invalid HUB75_GAMMA_MODE (must be 0=LINEAR, 1=CIE1931, or 2=GAMMA_2_2)"
+#endif
 
 // ============================================================================
-// Runtime LUT Selection Functions
+// Runtime LUT Access (No Selection - Single LUT)
 // ============================================================================
 
-const uint16_t *get_lut(Hub75GammaMode mode, uint8_t bit_depth) {
-  switch (mode) {
-    case Hub75GammaMode::CIE1931:
-      return get_cie1931_lut(bit_depth);
-    case Hub75GammaMode::GAMMA_2_2:
-      return get_gamma22_lut(bit_depth);
-    case Hub75GammaMode::NONE:
-    default:
-      return get_linear_lut(bit_depth);
-  }
-}
-
-const uint16_t *get_cie1931_lut(uint8_t bit_depth) {
-  switch (bit_depth) {
-    case 6:
-      return LUM_CONV_TAB_6BIT.data();
-    case 7:
-      return LUM_CONV_TAB_7BIT.data();
-    case 8:
-      return LUM_CONV_TAB_8BIT.data();
-    case 9:
-      return LUM_CONV_TAB_9BIT.data();
-    case 10:
-      return LUM_CONV_TAB_10BIT.data();
-    case 11:
-      return LUM_CONV_TAB_11BIT.data();
-    case 12:
-      return LUM_CONV_TAB_12BIT.data();
-  }
-  __builtin_unreachable();  // bit_depth validated in Hub75Driver::begin()
-}
-
-const uint16_t *get_gamma22_lut(uint8_t bit_depth) {
-  switch (bit_depth) {
-    case 6:
-      return GAMMA22_LUT_6BIT.data();
-    case 7:
-      return GAMMA22_LUT_7BIT.data();
-    case 8:
-      return GAMMA22_LUT_8BIT.data();
-    case 9:
-      return GAMMA22_LUT_9BIT.data();
-    case 10:
-      return GAMMA22_LUT_10BIT.data();
-    case 11:
-      return GAMMA22_LUT_11BIT.data();
-    case 12:
-      return GAMMA22_LUT_12BIT.data();
-  }
-  __builtin_unreachable();  // bit_depth validated in Hub75Driver::begin()
-}
-
-const uint16_t *get_linear_lut(uint8_t bit_depth) {
-  switch (bit_depth) {
-    case 6:
-      return LINEAR_LUT_6BIT.data();
-    case 7:
-      return LINEAR_LUT_7BIT.data();
-    case 8:
-      return LINEAR_LUT_8BIT.data();
-    case 9:
-      return LINEAR_LUT_9BIT.data();
-    case 10:
-      return LINEAR_LUT_10BIT.data();
-    case 11:
-      return LINEAR_LUT_11BIT.data();
-    case 12:
-      return LINEAR_LUT_12BIT.data();
-  }
-  __builtin_unreachable();  // bit_depth validated in Hub75Driver::begin()
-}
+constexpr const uint16_t *get_lut() noexcept { return LUT.data(); }
 
 // ============================================================================
 // Compile-Time Validation
 // ============================================================================
 
-namespace {  // Anonymous namespace for compile-time validation
+namespace {
 
 // Validate LUT monotonicity (gamma curves should be non-decreasing)
-consteval bool validate_lut_monotonic_8bit() {
+consteval bool validate_lut_monotonic() {
   for (size_t i = 1; i < 256; ++i) {
-    if (LUM_CONV_TAB_8BIT[i] < LUM_CONV_TAB_8BIT[i - 1]) {
+    if (LUT[i] < LUT[i - 1]) {
       return false;
     }
   }
   return true;
 }
 
-// Validate LUT bounds (8-bit: max value is 255)
-consteval bool validate_lut_bounds_8bit() {
-  constexpr uint16_t max_8bit = (1 << 8) - 1;
+// Validate LUT bounds (values don't exceed bit depth max)
+consteval bool validate_lut_bounds() {
+  constexpr uint16_t max_val = (1 << HUB75_BIT_DEPTH) - 1;
   for (size_t i = 0; i < 256; ++i) {
-    if (LUM_CONV_TAB_8BIT[i] > max_8bit) {
+    if (LUT[i] > max_val) {
       return false;
     }
   }
   return true;
 }
 
-// Validate endpoints (black and white)
-consteval bool validate_lut_endpoints_8bit() {
-  constexpr uint16_t max_8bit = (1 << 8) - 1;
-  return (LUM_CONV_TAB_8BIT[0] == 0) && (LUM_CONV_TAB_8BIT[255] == max_8bit);
-}
-
-// Validate 10-bit LUT bounds (max value is 1023)
-consteval bool validate_lut_bounds_10bit() {
-  constexpr uint16_t max_10bit = (1 << 10) - 1;
-  for (size_t i = 0; i < 256; ++i) {
-    if (LUM_CONV_TAB_10BIT[i] > max_10bit) {
-      return false;
-    }
-  }
-  return true;
-}
-
-// Validate 12-bit LUT bounds (max value is 4095)
-consteval bool validate_lut_bounds_12bit() {
-  constexpr uint16_t max_12bit = (1 << 12) - 1;
-  for (size_t i = 0; i < 256; ++i) {
-    if (LUM_CONV_TAB_12BIT[i] > max_12bit) {
-      return false;
-    }
-  }
-  return true;
+// Validate endpoints (black=0, white=max)
+consteval bool validate_lut_endpoints() {
+  constexpr uint16_t max_val = (1 << HUB75_BIT_DEPTH) - 1;
+  return (LUT[0] == 0) && (LUT[255] == max_val);
 }
 
 // Force compile-time evaluation
-static_assert(validate_lut_monotonic_8bit(), "8-bit LUT not monotonically increasing");
-static_assert(validate_lut_bounds_8bit(), "8-bit LUT values exceed 255");
-static_assert(validate_lut_endpoints_8bit(), "8-bit LUT endpoints incorrect");
-static_assert(validate_lut_bounds_10bit(), "10-bit LUT values exceed 1023");
-static_assert(validate_lut_bounds_12bit(), "12-bit LUT values exceed 4095");
+static_assert(validate_lut_monotonic(), "LUT not monotonically increasing");
+static_assert(validate_lut_bounds(), "LUT values exceed bit depth max");
+static_assert(validate_lut_endpoints(), "LUT endpoints incorrect (should be 0 and max)");
 
 }  // namespace
 

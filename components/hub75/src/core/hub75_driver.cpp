@@ -48,8 +48,7 @@ Hub75Driver::Hub75Driver(const Hub75Config &config) : config_(config), running_(
            (unsigned int) config_.panel_height, (unsigned int) config_.layout_cols, (unsigned int) config_.layout_rows,
            (unsigned int) (config_.panel_width * config_.layout_cols),
            (unsigned int) (config_.panel_height * config_.layout_rows));
-  ESP_LOGI(TAG, "Config: %u-bit depth, scan 1/%u", (unsigned int) config_.bit_depth,
-           (unsigned int) config_.scan_pattern);
+  ESP_LOGI(TAG, "Config: %u-bit depth (compile-time), scan 1/%u", HUB75_BIT_DEPTH, (unsigned int) config_.scan_pattern);
 }
 
 Hub75Driver::~Hub75Driver() { end(); }
@@ -73,10 +72,6 @@ bool Hub75Driver::begin() {
   }
   if (config_.layout_rows == 0 || config_.layout_cols == 0) {
     ESP_LOGE(TAG, "Invalid panel layout");
-    return false;
-  }
-  if (config_.bit_depth < 6 || config_.bit_depth > 12) {
-    ESP_LOGE(TAG, "Invalid bit_depth: %u (must be 6-12)", config_.bit_depth);
     return false;
   }
 

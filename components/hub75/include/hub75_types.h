@@ -197,7 +197,6 @@ struct Hub75Config {
   // ========================================
 
   Hub75ClockSpeed output_clock_speed = Hub75ClockSpeed::HZ_20M;  // Output clock speed (default: 20MHz)
-  uint8_t bit_depth = 8;                                         // BCM bit depth: 6-12 (default: 8)
   uint16_t min_refresh_rate = 60;                                // Minimum refresh rate in Hz (default: 60)
 
   // ========================================
@@ -218,8 +217,7 @@ struct Hub75Config {
   // Color
   // ========================================
 
-  Hub75GammaMode gamma_mode = Hub75GammaMode::CIE1931;  // Gamma correction mode (default: CIE1931)
-  uint8_t brightness = 128;                             // Initial brightness 0-255 (default: 128)
+  uint8_t brightness = 128;  // Initial brightness 0-255 (default: 128)
 };
 
 #ifdef __cplusplus

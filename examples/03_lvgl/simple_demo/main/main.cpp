@@ -32,9 +32,7 @@ static bool lvgl_lock(int timeout_ms) {
   return xSemaphoreTakeRecursive(lvgl_mutex, timeout_ticks) == pdTRUE;
 }
 
-static void lvgl_unlock() {
-  xSemaphoreGiveRecursive(lvgl_mutex);
-}
+static void lvgl_unlock() { xSemaphoreGiveRecursive(lvgl_mutex); }
 
 // LVGL display flush callback
 // Called by LVGL when a screen region needs updating
@@ -75,7 +73,7 @@ static void lvgl_timer_task(void *arg) {
       if (sleep_ms > 100) {
         sleep_ms = 100;  // Max 100ms for responsive animations
       } else if (sleep_ms < 1) {
-        sleep_ms = 1;     // Min 1ms to prevent busy-wait
+        sleep_ms = 1;  // Min 1ms to prevent busy-wait
       }
 
       vTaskDelay(pdMS_TO_TICKS(sleep_ms));
@@ -107,14 +105,12 @@ extern "C" void app_main() {
 
   ESP_LOGI(TAG, "HUB75 driver initialized");
   ESP_LOGI(TAG, "  Display: %ux%u pixels", driver.get_width(), driver.get_height());
-  ESP_LOGI(TAG, "  Clock: %lu Hz, Bit depth: %u, Refresh: %u Hz",
-           (unsigned long)config.output_clock_speed, config.bit_depth, config.min_refresh_rate);
-  ESP_LOGI(TAG, "  Pins - R1=%d G1=%d B1=%d R2=%d G2=%d B2=%d",
-           config.pins.r1, config.pins.g1, config.pins.b1,
+  ESP_LOGI(TAG, "  Clock: %lu Hz, Bit depth: %u, Refresh: %u Hz", (unsigned long) config.output_clock_speed,
+           config.bit_depth, config.min_refresh_rate);
+  ESP_LOGI(TAG, "  Pins - R1=%d G1=%d B1=%d R2=%d G2=%d B2=%d", config.pins.r1, config.pins.g1, config.pins.b1,
            config.pins.r2, config.pins.g2, config.pins.b2);
-  ESP_LOGI(TAG, "  Pins - A=%d B=%d C=%d D=%d E=%d CLK=%d LAT=%d OE=%d",
-           config.pins.a, config.pins.b, config.pins.c, config.pins.d, config.pins.e,
-           config.pins.clk, config.pins.lat, config.pins.oe);
+  ESP_LOGI(TAG, "  Pins - A=%d B=%d C=%d D=%d E=%d CLK=%d LAT=%d OE=%d", config.pins.a, config.pins.b, config.pins.c,
+           config.pins.d, config.pins.e, config.pins.clk, config.pins.lat, config.pins.oe);
 
   // Quick hardware test - RGB color bars
   driver.clear();
@@ -178,13 +174,11 @@ extern "C" void app_main() {
   }
 
   // Start LVGL timer task
-  BaseType_t ret = xTaskCreate(
-      lvgl_timer_task,
-      "lvgl_timer",
-      4096,                    // Stack size
-      nullptr,                 // No parameters
-      4,                       // Priority
-      nullptr                  // No task handle needed
+  BaseType_t ret = xTaskCreate(lvgl_timer_task, "lvgl_timer",
+                               4096,     // Stack size
+                               nullptr,  // No parameters
+                               4,        // Priority
+                               nullptr   // No task handle needed
   );
 
   if (ret != pdPASS) {

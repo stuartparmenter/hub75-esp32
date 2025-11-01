@@ -64,7 +64,7 @@ constexpr uint16_t RGB_MASK = RGB_UPPER_MASK | RGB_LOWER_MASK;  // 0x003F
 GdmaDma::GdmaDma(const Hub75Config &config)
     : PlatformDma(config),
       dma_chan_(nullptr),
-      bit_depth_(config.bit_depth),
+      bit_depth_(HUB75_BIT_DEPTH),
       lsbMsbTransitionBit_(0),
       panel_width_(config.panel_width),
       panel_height_(config.panel_height),

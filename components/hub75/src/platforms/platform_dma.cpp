@@ -12,13 +12,9 @@ static const char *const TAG = "PlatformDma";
 
 namespace hub75 {
 
-PlatformDma::PlatformDma(const Hub75Config &config)
-    : config_(config), lut_(get_lut(config.gamma_mode, config.bit_depth)) {
-  ESP_LOGI(TAG, "Initialized %s LUT for %d-bit depth",
-           config.gamma_mode == Hub75GammaMode::CIE1931     ? "CIE1931"
-           : config.gamma_mode == Hub75GammaMode::GAMMA_2_2 ? "Gamma2.2"
-                                                            : "Linear",
-           config.bit_depth);
+PlatformDma::PlatformDma(const Hub75Config &config) : config_(config), lut_(get_lut()) {
+  const char *gamma_name = HUB75_GAMMA_MODE == 0 ? "Linear" : HUB75_GAMMA_MODE == 1 ? "CIE1931" : "Gamma2.2";
+  ESP_LOGI(TAG, "Initialized %s LUT for %d-bit depth (compile-time)", gamma_name, HUB75_BIT_DEPTH);
 }
 
 }  // namespace hub75

@@ -61,8 +61,8 @@ static inline Hub75Config getDefaultConfig_ESP32() {
 
   // Performance settings
   config.output_clock_speed = Hub75ClockSpeed::HZ_20M;  // 20 MHz
-  config.bit_depth = 8;                                 // 8-bit BCM
-  config.min_refresh_rate = 60;                         // 60 Hz minimum
+  // Bit depth: Configure via menuconfig (idf.py menuconfig → HUB75 → Panel Settings)
+  config.min_refresh_rate = 60;  // 60 Hz minimum
 
   // Features
   config.double_buffer = false;
@@ -143,7 +143,7 @@ static inline Hub75Config getDefaultConfig_ESP32S3() {
   // Enable advanced features (S3 has more RAM)
   config.double_buffer = true;
   config.temporal_dither = true;
-  config.bit_depth = 10;  // Higher bit depth for smoother gradients
+  // Bit depth: Configure via menuconfig (default 8-bit, can set to 10/12)
 
   return config;
 }
@@ -266,11 +266,10 @@ static inline Hub75Config getUserConfig_ESP32S3_Dual64x64() {
   config.clk_phase_inverted = false;
 
   // Recommended settings for dual panels
-  config.bit_depth = 8;  // Start with 8-bit, can increase to 10-12 later
+  // Bit depth & gamma: Configure via menuconfig (default: 8-bit, CIE1931)
   config.min_refresh_rate = 60;
   config.double_buffer = false;  // Start simple, enable if needed
   config.temporal_dither = false;
-  config.gamma_mode = Hub75GammaMode::CIE1931;
   config.brightness = 255;
 
   return config;

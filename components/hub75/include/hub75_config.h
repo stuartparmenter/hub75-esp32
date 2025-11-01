@@ -54,6 +54,30 @@ extern "C" {
 #define HUB75_MAX_CHAINED_PANELS 8
 #endif
 
+/**
+ * Bit depth configuration (6-12 bits)
+ * Set via menuconfig or override: -DHUB75_BIT_DEPTH=10
+ */
+#ifndef HUB75_BIT_DEPTH
+#ifdef CONFIG_HUB75_BIT_DEPTH
+#define HUB75_BIT_DEPTH CONFIG_HUB75_BIT_DEPTH
+#else
+#define HUB75_BIT_DEPTH 8  // Default if no Kconfig
+#endif
+#endif
+
+/**
+ * Gamma mode (0=LINEAR/NONE, 1=CIE1931, 2=GAMMA_2_2)
+ * Set via menuconfig or override: -DHUB75_GAMMA_MODE=1
+ */
+#ifndef HUB75_GAMMA_MODE
+#ifdef CONFIG_HUB75_GAMMA_MODE
+#define HUB75_GAMMA_MODE CONFIG_HUB75_GAMMA_MODE
+#else
+#define HUB75_GAMMA_MODE 1  // Default: CIE1931
+#endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif

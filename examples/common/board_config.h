@@ -188,14 +188,9 @@ static inline Hub75Config getMenuConfigSettings() {
   config.layout = PanelLayout::BOTTOM_RIGHT_UP_ZIGZAG;
 #endif
 
-  // Bit depth
-#if defined(CONFIG_HUB75_BIT_DEPTH_8)
-  config.bit_depth = 8;
-#elif defined(CONFIG_HUB75_BIT_DEPTH_10)
-  config.bit_depth = 10;
-#elif defined(CONFIG_HUB75_BIT_DEPTH_12)
-  config.bit_depth = 12;
-#endif
+  // Bit depth & gamma: Configure via menuconfig
+  // (idf.py menuconfig → HUB75 → Panel Settings / Color)
+  // Or CMake override: -DHUB75_BIT_DEPTH=10 -DHUB75_GAMMA_MODE=0
 
   // Clock speed
 #if defined(CONFIG_HUB75_CLK_8MHZ)

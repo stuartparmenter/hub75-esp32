@@ -152,7 +152,7 @@ static void validate_brightness_oe_calculations(int bit_depth, int lsb_msb_trans
 ParlioDma::ParlioDma(const Hub75Config &config)
     : PlatformDma(config),
       tx_unit_(nullptr),
-      bit_depth_(config.bit_depth),
+      bit_depth_(HUB75_BIT_DEPTH),
       lsbMsbTransitionBit_(0),
       panel_width_(config.panel_width),
       panel_height_(config.panel_height),

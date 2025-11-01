@@ -72,7 +72,7 @@ constexpr uint16_t OE_CLEAR_MASK = ~(1 << OE_BIT);
 I2sDma::I2sDma(const Hub75Config &config)
     : PlatformDma(config),
       i2s_dev_(nullptr),
-      bit_depth_(config.bit_depth),
+      bit_depth_(HUB75_BIT_DEPTH),
       lsbMsbTransitionBit_(0),
       panel_width_(config.panel_width),
       panel_height_(config.panel_height),

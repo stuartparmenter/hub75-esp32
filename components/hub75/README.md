@@ -142,10 +142,14 @@ Double buffering doubles memory usage but enables tear-free animation. PARLIO us
 - `uint8_t get_brightness()` - Get current brightness value
 
 **Gamma Correction:**
-Gamma correction mode is set at initialization via `config.gamma_mode` and cannot be changed at runtime:
-- `Hub75GammaMode::NONE` - No gamma correction (linear)
-- `Hub75GammaMode::CIE1931` - CIE 1931 standard (recommended, default)
-- `Hub75GammaMode::GAMMA_2_2` - Gamma 2.2 correction
+Gamma correction mode is **compile-time only** (configured via menuconfig):
+- `HUB75_GAMMA_MODE=0` - Linear (no correction)
+- `HUB75_GAMMA_MODE=1` - CIE 1931 standard (recommended, default)
+- `HUB75_GAMMA_MODE=2` - Gamma 2.2
+
+Configure via:
+- `idf.py menuconfig` → HUB75 → Color → Gamma Correction Mode
+- Or CMake: `target_compile_definitions(app PRIVATE HUB75_GAMMA_MODE=1)`
 
 **Dual-Mode Brightness System:**
 - **Basis brightness** (0-255): Adjusts hardware OE (output enable) timing in DMA buffers
@@ -180,10 +184,17 @@ config.layout = PanelLayout::HORIZONTAL;
 
 **Higher quality display:**
 ```cpp
-config.bit_depth = 10;         // Better gradients
+// Bit depth: Configure via menuconfig (6-12 bit available)
+// (idf.py menuconfig → HUB75 → Panel Settings → Bit Depth)
 config.double_buffer = true;   // Tear-free updates
 config.min_refresh_rate = 90;  // Smoother for cameras
 ```
+
+**Bit Depth Configuration:**
+Bit depth is **compile-time only** (6-12 bits supported):
+- Configure via `idf.py menuconfig` → HUB75 → Panel Settings → Bit Depth
+- Or CMake: `target_compile_definitions(app PRIVATE HUB75_BIT_DEPTH=10)`
+- Changes require full rebuild (regenerates LUT at compile time)
 
 **For complete configuration reference** (all scan patterns, layouts, clock speeds, bit depth options, pin configuration, etc.), see **[MENUCONFIG.md](../../docs/MENUCONFIG.md)**.
 

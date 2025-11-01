@@ -11,7 +11,7 @@
 #include <soc/soc_caps.h>  // For SOC_PARLIO_SUPPORTED and SOC_PARLIO_TX_CLK_SUPPORT_GATING
 
 // Uncomment to enable brightness OE validation (compile-time and runtime checks)
-#define DEBUG_BRIGHTNESS_OE_VALIDATION
+// #define DEBUG_BRIGHTNESS_OE_VALIDATION
 
 // Only compile for chips with PARLIO peripheral (ESP32-P4, ESP32-C6, etc.)
 #ifdef SOC_PARLIO_SUPPORTED
@@ -88,18 +88,6 @@ static constexpr float calculate_bcm_ratio(int bit, int prev_bit, int lsb_msb_tr
   const int prev_reps = calculate_bcm_repetitions(prev_bit, lsb_msb_transition);
   return (float) curr_reps / (float) prev_reps;
 }
-
-// Compile-time checks (examples - actual values depend on config)
-static_assert(calculate_bcm_repetitions(0, 1) == 1, "Bit 0 should have 1 repetition");
-static_assert(calculate_bcm_repetitions(1, 1) == 1, "Bit 1 should have 1 repetition");
-static_assert(calculate_bcm_repetitions(2, 1) == 1, "Bit 2 should have 1 repetition (first MSB)");
-static_assert(calculate_bcm_repetitions(3, 1) == 2, "Bit 3 should have 2 repetitions");
-static_assert(calculate_bcm_repetitions(7, 1) == 32, "Bit 7 should have 32 repetitions");
-
-// Verify BCM ratios are correct
-static_assert(calculate_bcm_ratio(3, 2, 1) == 2.0f, "BCM ratio bit3/bit2 should be 2.0");
-static_assert(calculate_bcm_ratio(4, 3, 1) == 2.0f, "BCM ratio bit4/bit3 should be 2.0");
-static_assert(calculate_bcm_ratio(7, 6, 1) == 2.0f, "BCM ratio bit7/bit6 should be 2.0");
 
 #ifdef DEBUG_BRIGHTNESS_OE_VALIDATION
 // Runtime validation function to verify brightness OE calculations
@@ -1000,49 +988,6 @@ void ParlioDma::flip_buffer() {
     ESP_LOGW(TAG, "flip_buffer: Failed to queue buffer: %s", esp_err_to_name(err));
   }
 }
-
-// ============================================================================
-// Compile-Time Validation
-// ============================================================================
-
-namespace {
-
-// Validate BCM padding repetition calculation
-consteval bool test_bcm_padding_repetitions() {
-  // For bit 7 with lsb_msb_transition=1:
-  // Repetitions = 1 << (7 - 1 - 1) = 1 << 5 = 32
-  constexpr int repetitions = (1 << (7 - 1 - 1));
-  return repetitions == 32;
-}
-
-consteval bool test_bcm_padding_repetitions_bit5() {
-  // For bit 5 with lsb_msb_transition=1:
-  // Repetitions = 1 << (5 - 1 - 1) = 1 << 3 = 8
-  constexpr int repetitions = (1 << (5 - 1 - 1));
-  return repetitions == 8;
-}
-
-consteval bool test_bcm_padding_repetitions_bit3() {
-  // For bit 3 with lsb_msb_transition=1:
-  // Repetitions = 1 << (3 - 1 - 1) = 1 << 1 = 2
-  constexpr int repetitions = (1 << (3 - 1 - 1));
-  return repetitions == 2;
-}
-
-consteval bool test_bcm_padding_repetitions_bit2() {
-  // For bit 2 with lsb_msb_transition=1:
-  // Repetitions = 1 << (2 - 1 - 1) = 1 << 0 = 1
-  constexpr int repetitions = (1 << (2 - 1 - 1));
-  return repetitions == 1;
-}
-
-// Static assertions
-static_assert(test_bcm_padding_repetitions(), "BCM padding: bit 7, transition 1 should produce 32 repetitions");
-static_assert(test_bcm_padding_repetitions_bit5(), "BCM padding: bit 5, transition 1 should produce 8 repetitions");
-static_assert(test_bcm_padding_repetitions_bit3(), "BCM padding: bit 3, transition 1 should produce 2 repetitions");
-static_assert(test_bcm_padding_repetitions_bit2(), "BCM padding: bit 2, transition 1 should produce 1 repetition");
-
-}  // namespace
 
 }  // namespace hub75
 

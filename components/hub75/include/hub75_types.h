@@ -14,15 +14,6 @@ extern "C" {
 #endif
 
 /**
- * @brief Gamma correction mode
- */
-enum class Hub75GammaMode {
-  NONE = 0,   // No gamma correction (linear)
-  CIE1931,    // CIE 1931 perceptual correction
-  GAMMA_2_2,  // Standard gamma 2.2
-};
-
-/**
  * @brief Pixel buffer format for bulk drawing operations
  */
 enum class Hub75PixelFormat {

@@ -62,9 +62,17 @@ static void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px
 static void lvgl_timer_task(void *arg) {
   ESP_LOGI(TAG, "LVGL timer task started");
 
+  TickType_t last_wake_time = xTaskGetTickCount();
+
   while (1) {
     // Lock LVGL mutex
     if (lvgl_lock(10)) {
+      // Calculate elapsed time and update LVGL tick (required for animations)
+      TickType_t current_time = xTaskGetTickCount();
+      uint32_t elapsed_ms = pdTICKS_TO_MS(current_time - last_wake_time);
+      last_wake_time = current_time;
+      lv_tick_inc(elapsed_ms);
+
       // Handle LVGL timers and tasks (triggers redraws and animations)
       uint32_t sleep_ms = lv_timer_handler();
       lvgl_unlock();
